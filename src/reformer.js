@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,15 +27,19 @@
 b4w.module["__reformer"] = function(exports, require) {
 
 var m_bounds = require("__boundings");
+var m_cfg    = require("__config");
 var m_curve  = require("__curve");
 var m_mat4   = require("__mat4");
 var m_print  = require("__print");
 var m_quat   = require("__quat");
+var m_tbn    = require("__tbn");
 var m_util   = require("__util");
 var m_vec3   = require("__vec3");
 var m_mat3   = require("__mat3");
 var m_logn   = require("__logic_nodes");
 var m_anim   = require("__animation");
+
+var cfg_def = m_cfg.defaults;
 
 var REPORT_COMPATIBILITY_ISSUES = true;
 
@@ -46,6 +50,7 @@ var _unreported_compat_issues = false;
 var _params_reported = {};
 
 var _mat3_tmp = m_mat3.create();
+var _tbn_tmp  = m_tbn.create();
 var _quat_tmp = m_quat.create();
 
 function reform_node(node) {
@@ -276,12 +281,13 @@ exports.check_bpy_data = function(bpy_data) {
             "use_sky_paper": false,
             "use_sky_blend": false,
             "use_sky_real": false,
+            "use_nodes": false,
+            "node_tree": null,
             "texture_slots": []
         }
         worlds.push(world);
     }
 
-    var worlds = bpy_data["worlds"];
     for (var i = 0; i < worlds.length; i++) {
         var world = worlds[i];
 
@@ -420,6 +426,9 @@ exports.check_bpy_data = function(bpy_data) {
             scene["timeline_markers"] = null;
             report("scene", scene, "timeline_markers");
         }
+        if (typeof scene["b4w_enable_physics"] == "boolean") {
+            scene["b4w_enable_physics"] = "AUTO";
+        }
 
         if (!("b4w_reflection_quality" in scene)) {
             scene["b4w_reflection_quality"] = "MEDIUM";
@@ -502,6 +511,17 @@ exports.check_bpy_data = function(bpy_data) {
             };
             report("scene", scene, "b4w_tags");
         }
+
+        if (!("b4w_lod_smooth_type" in scene)) {
+            scene["b4w_lod_smooth_type"] = "OFF";
+            report("scene", scene, "b4w_lod_smooth_type");
+        }
+
+        if (!("b4w_lod_hyst_interval" in scene)) {
+            scene["b4w_lod_hyst_interval"] = 0;
+            report("scene", scene, "b4w_lod_hyst_interval");
+        }
+
         if (!("b4w_enable_object_selection" in scene)) {
             scene["b4w_enable_object_selection"] = "AUTO";
             report("scene", scene, "b4w_enable_object_selection");
@@ -666,6 +686,14 @@ exports.check_bpy_data = function(bpy_data) {
             report("scene", scene, "b4w_bloom_settings.edge_lum");
             scene["b4w_bloom_settings"]["edge_lum"] = 1.0;
         }
+        if (!("adaptive" in scene["b4w_bloom_settings"])) {
+            report("scene", scene, "b4w_bloom_settings.adaptive");
+            scene["b4w_bloom_settings"]["adaptive"] = true;
+        }
+        if (!("average_luminance" in scene["b4w_bloom_settings"])) {
+            report("scene", scene, "b4w_bloom_settings.average_luminance");
+            scene["b4w_bloom_settings"]["average_luminance"] = 0.5;
+        }
 
         if (!("b4w_motion_blur_settings" in scene)) {
             report("scene", scene, "b4w_motion_blur_settings");
@@ -775,6 +803,10 @@ exports.check_bpy_data = function(bpy_data) {
             scene["audio_distance_model"] = "INVERSE_CLAMPED";
         }
 
+        if (!("b4w_custom_prop" in scene)) {
+            report("scene", scene, "b4w_custom_prop");
+            scene["b4w_custom_prop"] = null;
+        }
     }
 
     /* object data - meshes */
@@ -850,9 +882,9 @@ exports.check_bpy_data = function(bpy_data) {
                 b_data["caxis_z"] = [0,0,1];
         }
 
-        if (!mesh["uv_textures"]) {
-            report("mesh", mesh, "uv_textures");
-            mesh["uv_textures"] = [];
+        if (!("is_boundings_overridden" in mesh)) {
+            report("mesh", mesh, "is_boundings_overridden");
+            mesh["is_boundings_overridden"] = false;
         }
 
         if (!("b4w_shape_keys" in mesh)) {
@@ -877,6 +909,11 @@ exports.check_bpy_data = function(bpy_data) {
                         "min_z" : mesh["b4w_bounding_box"]["min_z"]
                     }
                 };
+            }
+
+            if (!("uv_layers" in submesh)) {
+                report("submesh", mesh, "uv_layers");
+                submesh["uv_layers"] = mesh["uv_textures"];
             }
 
             if (!("be_ax" in submesh["boundings"]))
@@ -1090,6 +1127,11 @@ exports.check_bpy_data = function(bpy_data) {
             camera["b4w_dof_rear_end"] = camera["b4w_dof_rear"];
             report("camera", camera, "b4w_dof_rear_end");
         }
+
+        if (!("sensor_fit" in camera)) {
+            camera["sensor_fit"] = "VERTICAL";
+            report("camera", camera, "sensor_fit");
+        }
     }
 
     /* object data - lamps */
@@ -1300,8 +1342,13 @@ exports.check_bpy_data = function(bpy_data) {
     for (var i = 0; i < materials.length; i++) {
         var mat = materials[i];
 
-        if (mat["game_settings"]["alpha_blend"] == "ALPHA_ANTIALIASING")
+        if (cfg_def.msaa_samples < 2 
+                && mat["game_settings"]["alpha_blend"] == "ALPHA_ANTIALIASING") {
+            m_print.warn("Material \"" + mat["name"] + "\" has the "
+                    + "\"Alpha Anti-Aliasing\" transparency type, but " 
+                    + "multisampling is disabled. Changed to \"Alpha Clip\".")
             mat["game_settings"]["alpha_blend"] = "CLIP";
+        }
 
         if (!("use_tangent_shading" in mat)) {
             mat["use_tangent_shading"] = false;
@@ -1756,6 +1803,11 @@ exports.check_bpy_data = function(bpy_data) {
                 //report("object", bpy_obj, "b4w_hidden_on_load");
             }
 
+            if (!("b4w_hide_chldr_on_load" in bpy_obj)) {
+                bpy_obj["b4w_hide_chldr_on_load"] = false;
+                //report("object", bpy_obj, "b4w_hidden_on_load");
+            }
+
             if (!("use_ghost" in bpy_obj["game"])) {
                 bpy_obj["game"]["use_ghost"] = false;
                 //report("object", bpy_obj, "use_ghost");
@@ -1945,10 +1997,6 @@ exports.check_bpy_data = function(bpy_data) {
                     bpy_obj["b4w_outline_settings"]["outline_relapses"] = 0;
                 }
                 report("object", bpy_obj, "b4w_outline_settings");
-            }
-            if (!("b4w_lod_transition" in bpy_obj)) {
-                bpy_obj["b4w_lod_transition"] = 0.01;
-                report("object", bpy_obj, "b4w_lod_transition");
             }
             if (!("lod_levels" in bpy_obj)) {
                 bpy_obj["lod_levels"] = [];
@@ -2149,6 +2197,16 @@ exports.check_bpy_data = function(bpy_data) {
             bpy_obj["constraints"] = [];
             report("object", bpy_obj, "constraints");
         }
+        var constraints = bpy_obj["constraints"];
+        for (var j = 0; j < constraints.length; j++) {
+            var cons = constraints[j];
+            if (!("influence" in cons)) {
+                cons["influence"] = 1;
+            }
+            if (!("axes" in cons)) {
+                cons["axes"] = [1, 1, 1];
+            }
+        }
 
         var mods = bpy_obj["modifiers"];
         for (var j = 0; j < mods.length; j++) {
@@ -2199,8 +2257,7 @@ exports.check_bpy_data = function(bpy_data) {
         if (!("b4w_cluster_data" in bpy_obj)) {
             bpy_obj["b4w_cluster_data"] = { 
                 "cluster_id": -1,
-                "cluster_center": null,
-                "cluster_radius": 0,
+                "cluster_center": null
             };
             report("object", bpy_obj, "b4w_cluster_data");
         }
@@ -2208,6 +2265,11 @@ exports.check_bpy_data = function(bpy_data) {
         if (!("pass_index" in bpy_obj)) {
             bpy_obj["pass_index"] = 0.0;
             report("object", bpy_obj, "pass_index");
+        }
+
+        if (!("b4w_custom_prop" in bpy_obj)) {
+            report("object", bpy_obj, "b4w_custom_prop");
+            bpy_obj["b4w_custom_prop"] = null;
         }
 
         if (check_negative_scale(bpy_obj))
@@ -2477,7 +2539,7 @@ function apply_array_modifier(mesh, mod) {
         }
 
         if (mod["use_relative_offset"]) {
-            var bb = mesh["b4w_bounding_box"];
+            var bb = mesh["b4w_boundings"]["bb"];
             dx += (bb["max_x"] - bb["min_x"]) * mod["relative_offset_displace"][0];
             dy += (bb["max_y"] - bb["min_y"]) * mod["relative_offset_displace"][1];
             dz += (bb["max_z"] - bb["min_z"]) * mod["relative_offset_displace"][2];
@@ -2513,14 +2575,12 @@ function apply_curve_modifier(mesh, mod) {
     var tangent_b = new Float32Array(3);
 
     var loc = new Float32Array(3);
-    var nor = new Float32Array(4);
-    var tan = new Float32Array(4);
 
     for (var i = 0; i < mesh["submeshes"].length; i++) {
         var submesh = mesh["submeshes"][i];
 
         var position = submesh["position"];
-        var tbn_quat = submesh["tbn_quat"];
+        var tbn = submesh["tbn"];
 
         // NOTE: expected that mesh lies on positive side of deform axis
         var deform_index = deform_axis_index(mod["deform_axis"]);
@@ -2590,19 +2650,9 @@ function apply_curve_modifier(mesh, mod) {
             position[3*j+1] = loc[1];
             position[3*j+2] = loc[2];
 
-            if (tbn_quat.length) {
-                _quat_tmp[0] = tbn_quat[4*j];
-                _quat_tmp[1] = tbn_quat[4*j+1];
-                _quat_tmp[2] = tbn_quat[4*j+2];
-                _quat_tmp[3] = tbn_quat[4*j+3];
-
-                m_quat.multiply(_quat_tmp, quat, _quat_tmp);
-
-                tbn_quat[4*j] = _quat_tmp[0];
-                tbn_quat[4*j+1] = _quat_tmp[1];
-                tbn_quat[4*j+2] = _quat_tmp[2];
-                tbn_quat[4*j+3] = _quat_tmp[3];
-            }
+            var cur_tbn = m_tbn.get_item(tbn, j, _tbn_tmp);
+            m_tbn.multiply_quat(cur_tbn, quat, cur_tbn);
+            m_tbn.set_item(tbn, cur_tbn, j);
         }
     }
 }
@@ -2620,43 +2670,6 @@ function deform_axis_index(deform_axis) {
         return 2;
     default:
         m_util.panic("Wrong deform axis value " + deform_axis);
-    }
-}
-
-/*
- * Modify locations with coords located inside given box.
- * Null interval values means all points along such axis
- */
-function modify_mesh_points_interval(mesh, x_min, x_max, y_min, y_max,
-        z_min, z_max, matrix) {
-
-    var locations = mesh["vertices"]["locations"];
-
-    var loc = new Float32Array(3);
-
-    for (var i = 0; i < locations.length / 3; i++) {
-
-        // retrieve
-        var x = locations[3*i];
-        var y = locations[3*i+1];
-        var z = locations[3*i+2];
-
-        if (((x_max - x_min) == 0 || (x >= x_min && x < x_max)) &&
-            ((y_max - y_min) == 0 || (y >= y_min && y < y_max)) &&
-            ((z_max - z_min) == 0 || (z >= z_min && z < z_max))) {
-
-            // transform
-            loc[0] = x;
-            loc[1] = y;
-            loc[2] = z;
-
-            m_vec3.transformMat4(loc, matrix, loc);
-
-            // save
-            locations[3*i] = loc[0];
-            locations[3*i+1] = loc[1];
-            locations[3*i+2] = loc[2];
-        }
     }
 }
 
@@ -2743,7 +2756,7 @@ exports.create_material = function(name) {
 function mesh_copy(mesh, new_name) {
 
     if (!new_name)
-        var new_name = mesh["name"] + "_COPY";
+        new_name = mesh["name"] + "_COPY";
 
     var materials = mesh["materials"];
     var submeshes = mesh["submeshes"];
@@ -2751,7 +2764,7 @@ function mesh_copy(mesh, new_name) {
     mesh["materials"] = null;
     mesh["submeshes"] = null;
 
-    var mesh_new = m_util.clone_object_json(mesh);
+    var mesh_new = m_util.clone_object_r(mesh);
 
     mesh["materials"] = materials;
     mesh["submeshes"] = submeshes;
@@ -2785,7 +2798,7 @@ function mesh_join(mesh, mesh2) {
         submesh["base_length"] += submesh2["base_length"];
 
         for (var prop in submesh) {
-            if (prop == "base_length" || prop == "boundings")
+            if (prop == "base_length" || prop == "boundings" || prop == "uv_layers")
                 continue;
 
             if (prop == "indices") {
@@ -2816,8 +2829,8 @@ function mesh_transform_locations(mesh, matrix) {
 
         m_util.positions_multiply_matrix(submesh["position"], matrix,
                 submesh["position"], 0);
-        m_util.quats_multiply_quat(submesh["tbn_quat"], quat,
-                submesh["tbn_quat"], 0);
+
+        m_tbn.multiply_quat(submesh["tbn"], quat, submesh["tbn"]);
     }
 }
 
@@ -2909,7 +2922,14 @@ exports.assign_logic_nodes_object_params = function(bpy_objects, bpy_world, scen
                 report_raw("Logic nodes type \"SELECT_PLAY_ANIM\" is deprecated");
                 break;    
             case "SHOW":
+                if (!snode["bools"])
+                        snode["bools"] = {};
+
+                if (snode["bools"]["ch"] === undefined)
+                    snode["bools"]["ch"] = false;
             case "HIDE":
+                set_bpy_objs_props(snode["objects_paths"], {"b4w_do_not_batch": true});
+                break;
             case "SET_SHADER_NODE_PARAM":
             case "INHERIT_MAT":
                 set_bpy_objs_props(snode["objects_paths"], {"b4w_do_not_batch": true});
@@ -3001,6 +3021,59 @@ exports.assign_logic_nodes_object_params = function(bpy_objects, bpy_world, scen
                     snode["floats"]["inp1"] = snode["input1"];
                 if (snode["input2"] != undefined)
                     snode["floats"]["inp2"] = snode["input2"];
+                switch (snode["operation"]) {
+                case "DIV":
+                    snode["operation"] = m_logn.NMO_DIV;
+                    break;
+                case "SUB":
+                    snode["operation"] = m_logn.NMO_SUB;
+                    break;
+                case "MUL":
+                    snode["operation"] = m_logn.NMO_MUL;
+                    break;
+                case "ADD":
+                    snode["operation"] = m_logn.NMO_ADD;
+                    break;
+                case "RAND":
+                    snode["operation"] = m_logn.NMO_RAND;
+                    break;
+                case "SIN":
+                    snode["operation"] = m_logn.NMO_SIN;
+                    break;
+                case "COS":
+                    snode["operation"] = m_logn.NMO_COS;
+                    break;
+                case "TAN":
+                    snode["operation"] = m_logn.NMO_TAN;
+                    break;
+                case "ARCSIN":
+                    snode["operation"] = m_logn.NMO_ARCSIN;
+                    break;
+                case "ARCCOS":
+                    snode["operation"] = m_logn.NMO_ARCCOS;
+                    break;
+                case "ARCTAN":
+                    snode["operation"] = m_logn.NMO_ARCTAN;
+                    break;
+                case "LOG":
+                    snode["operation"] = m_logn.NMO_LOG;
+                    break;
+                case "MIN":
+                    snode["operation"] = m_logn.NMO_MIN;
+                    break;
+                case "MAX":
+                    snode["operation"] = m_logn.NMO_MAX;
+                    break;
+                case "ROUND":
+                    snode["operation"] = m_logn.NMO_ROUND;
+                    break;
+                case "MOD":
+                    snode["operation"] = m_logn.NMO_MOD;
+                    break;
+                case "ABS":
+                    snode["operation"] = m_logn.NMO_ABS;
+                    break;
+                }
                 break;
             case "REGSTORE":
                 if (!snode["floats"])

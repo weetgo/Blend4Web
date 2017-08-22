@@ -1,4 +1,5 @@
 # Blend4Web CE SDK distribution list
+apps_dev/AR
 apps_dev/code_snippets
 apps_dev/demos_*
 apps_dev/flight
@@ -11,10 +12,12 @@ apps_dev/victory_day_2015
 apps_dev/viewer
 apps_dev/website
 apps_dev/webplayer
+projects/simple_app
 
 csrc
 doc_src
 
+blender/AR
 blender/animation
 blender/code_snippets
 blender/dev/logo.blend
@@ -41,6 +44,7 @@ blender/material_library/plastic/rought_plastic.blend
 
 blender/materials
 blender/media
+blender/misc/constraints*
 blender/misc/logo*
 blender/new_year
 blender/particles
@@ -56,19 +60,11 @@ addons
 
 deploy/api_doc
 
-deploy/apps/code_snippets
 deploy/apps/common
 deploy/apps/demos_*
-deploy/apps/flight
-deploy/apps/new_year
-deploy/apps/petigors_tale
-deploy/apps/space_disaster
-deploy/apps/tutorials
-deploy/apps/victory_day_2015
-deploy/apps/viewer
 deploy/apps/webplayer
-deploy/apps/website
 
+deploy/assets/AR
 deploy/assets/animation
 deploy/assets/code_snippets
 deploy/assets/dev/4_digit*
@@ -109,6 +105,7 @@ deploy/assets/material_library/additional_objects/
 
 deploy/assets/materials
 deploy/assets/media
+deploy/assets/misc/constraints*
 deploy/assets/misc/logo*
 deploy/assets/new_year
 deploy/assets/particles

@@ -21,13 +21,10 @@ var m_cam   = require("camera");
 var m_cont  = require("container");
 var m_mat   = require("material");
 
-var m_quat  = require("quat");
-
 var m_conf = require("game_config");
 var m_combat = require("combat");
 var m_interface = require("interface");
 var m_bonuses = require("bonuses");
-var m_env = require("environment");
 
 var _level_conf = null; // specified during initialization
 
@@ -119,21 +116,21 @@ exports.setup_controls = function (elapsed_sensor) {
     var offset = new Float32Array(m_conf.CAM_OFFSET);
     var dist = m_vec3.length(offset);
 
-    var clamp_left  = 0;
-    var clamp_right = 0;
+    var clamp_left  = -Math.PI / 2;
+    var clamp_right = Math.PI / 2;
     var clamp_up    = Math.PI / 3;
     var clamp_down  = 0.01;
 
     function rotation_cb(rot_x, rot_z) {
         m_phy.character_rotation_inc(_char_wrapper.phys_body, rot_x, 0);
         if (rot_z) {
-            m_cam.eye_rotate(camobj, 0, rot_z);
+            m_cam.rotate_camera(camobj, 0, rot_z);
 
             m_cam.get_camera_angles(camobj, _vec3_tmp);
             offset[1] =  dist * Math.cos(_vec3_tmp[1]);
             offset[2] = -dist * Math.sin(_vec3_tmp[1]);
 
-            m_cons.append_semi_stiff_cam(camobj, _char_wrapper.target, offset, null,
+            m_cons.append_semi_stiff(camobj, _char_wrapper.target, offset, null,
                                  clamp_left, clamp_right, clamp_up, clamp_down);
         }
     }
@@ -151,7 +148,7 @@ exports.setup_controls = function (elapsed_sensor) {
     setup_attack(touch_attack, elapsed_sensor);
 
     var targ_pos = m_trans.get_translation(_char_wrapper.target, _vec3_tmp);
-    m_cons.append_semi_stiff_cam(camobj, _char_wrapper.target, offset, null,
+    m_cons.append_semi_stiff(camobj, _char_wrapper.target, offset, null,
                         clamp_left, clamp_right, clamp_up, clamp_down);
     m_cam.eye_set_look_at(camobj, null, targ_pos);
 
@@ -202,7 +199,6 @@ exports.run_victory = function() {
     var cam_params = {pivot: pivot};
     m_cam.target_setup(camobj, cam_params);
 
-    var elapsed_sensor = m_ctl.create_elapsed_sensor();
     function cam_rotate_cb(obj, id, pulse) {
         var angles = m_cam.get_camera_angles(obj, _vec2_tmp);
         var dist = m_cam.target_get_distance(obj);
@@ -215,7 +211,7 @@ exports.run_victory = function() {
         else
             var vert_angle = 0;
 
-        m_cam.target_rotate(obj, hor_angle, vert_angle);
+        m_cam.rotate_camera(obj, hor_angle, vert_angle);
 
         if (dist > _level_conf.VICT_CAM_DIST) {
             dist -= elapsed;
@@ -381,10 +377,10 @@ function setup_movement(up_arrow, down_arrow, left_arrow, right_arrow, on_ground
         }
 
         if ((move_state.forw_back || move_state.left_right) && on_ground) {
-            if (!m_sfx.is_play(_char_run_spk))
+            if (!m_sfx.is_playing(_char_run_spk))
                 m_sfx.play_def(_char_run_spk);
         } else {
-            if (m_sfx.is_play(_char_run_spk))
+            if (m_sfx.is_playing(_char_run_spk))
                 m_sfx.stop(_char_run_spk);
         }
 
@@ -405,23 +401,21 @@ function setup_movement(up_arrow, down_arrow, left_arrow, right_arrow, on_ground
         if (_char_wrapper.state == m_conf.CH_ATTACK)
             return;
 
-        var on_ground = m_ctl.get_sensor_value(obj, id, 0);
-
         var cur_anim = m_anim.get_current_anim_name(_char_wrapper.rig);
         var required_anim = m_conf.CHAR_IDLE_ANIM;
 
         if (_char_wrapper.state == m_conf.CH_JUMP) {
-            var required_anim = m_conf.CHAR_JUMP_ANIM;
+            required_anim = m_conf.CHAR_JUMP_ANIM;
         } else if (move_state.forw_back == 1) {
-            var required_anim = m_conf.CHAR_RUN_ANIM;
+            required_anim = m_conf.CHAR_RUN_ANIM;
         } else if (move_state.forw_back == -1) {
-            var required_anim = m_conf.CHAR_RUN_ANIM;
+            required_anim = m_conf.CHAR_RUN_ANIM;
             m_anim.set_speed(_char_wrapper.rig, -1);
         } else if (move_state.left_right == 1) {
-            var required_anim = m_conf.CHAR_STRAFE;
+            required_anim = m_conf.CHAR_STRAFE;
             m_anim.set_speed(_char_wrapper.rig, -1);
         } else if (move_state.left_right == -1) {
-            var required_anim = m_conf.CHAR_STRAFE;
+            required_anim = m_conf.CHAR_STRAFE;
         }
 
         if (cur_anim != required_anim) {
@@ -455,8 +449,8 @@ function setup_jumping(touch_jump, on_ground_sens) {
             _char_wrapper.state = m_conf.CH_JUMP;
             m_phy.character_jump(obj);
 
-            var id = Math.floor(_char_jump_spks.length * Math.random());
-            m_sfx.play_def(_char_jump_spks[id]);
+            var jump_id = Math.floor(_char_jump_spks.length * Math.random());
+            m_sfx.play_def(_char_jump_spks[jump_id]);
 
             m_anim.apply(_char_wrapper.rig, m_conf.CHAR_JUMP_ANIM);
             m_anim.set_behavior(_char_wrapper.rig, m_anim.AB_FINISH_STOP);
@@ -494,7 +488,7 @@ function setup_attack(touch_attack, elapsed) {
     }
 
     function process_attack_speakers() {
-        if (m_sfx.is_play(_char_run_spk))
+        if (m_sfx.is_playing(_char_run_spk))
             m_sfx.stop(_char_run_spk);
 
         m_sfx.play_def(_char_attack_spk);
@@ -560,7 +554,6 @@ function disable_controls() {
         m_ctl.remove_sensor_manifold(_char_wrapper.phys_body);
     m_phy.set_character_move_dir(_char_wrapper.phys_body, 0, 0);
     m_sfx.stop(_char_run_spk);
-    var canvas_elem = m_cont.get_canvas();
 
     if (!m_main.detect_mobile())
         m_mouse.exit_pointerlock();

@@ -180,8 +180,15 @@ vec2 vec_to_uv(vec3 vec)
 #endnode
 
 #node GEOMETRY_NO
+    #node_var USE_NORMAL_IN 0
+    #node_in vec3 normal_in
     #node_out vec3 normal_out
-    normal_out = nin_geom_normal.xyz;
+
+# node_if USE_NORMAL_IN
+        normal_out = normal_in;
+# node_else
+       normal_out = nin_geom_normal.xyz;
+# node_endif
 #endnode
 
 #node GEOMETRY_FB
@@ -355,6 +362,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_in vec3 normal_in
     #node_in vec3 e_color
     #node_in float emission
+    #node_in vec3 a_color
+    #node_in float alpha
     #node_out vec3 E
     #node_out vec3 A
     #node_out vec3 D
@@ -362,10 +371,12 @@ vec2 vec_to_uv(vec3 vec)
     #node_out vec3 normal
     #node_out vec4 bsdf_params
     #node_out vec4 shadow_factor
+    #node_out vec3 d_color_out
     #node_out vec3 s_color_out
-    #node_out float metalness_out
     #node_out vec3 e_color_out
     #node_out float emission_out
+    #node_out vec3 a_color_out
+    #node_out float alpha_out
 
     // diffuse
     D = d_color;
@@ -373,10 +384,13 @@ vec2 vec_to_uv(vec3 vec)
     S = s_color;
 
     normal = normal_in;
+    d_color_out = d_color;
     s_color_out = s_color;
     metalness_out = metalness;
     e_color_out = e_color;
     emission_out = emission;
+    a_color_out = a_color;
+    alpha_out = alpha;
 
     // old emission
     E = nin_emit * D;
@@ -396,13 +410,26 @@ vec2 vec_to_uv(vec3 vec)
     #node_in vec4 color_in
     #node_in vec3 specular_in
     #node_in vec3 normal
+    #node_in vec4 bsdf_params
+    #node_in vec3 d_color
     #node_in vec3 s_color
-    #node_in float metalness
     #node_in vec3 e_color
     #node_in float emission
+    #node_in vec3 a_color
+    #node_in float emission
+    #node_in float alpha_in
+    #node_out vec3 color_out
 
-    nout_color = color_in.rgb + specular_in;
-    nout_color = mix(nout_color, e_color, emission);
+    color_out = color_in.rgb + specular_in;
+    color_out = mix(color_out, e_color, emission);
+    nout_alpha = _1_0;
+
+# node_if USE_NODE_BSDF_TRANSPARENT
+    vec3 back_color = GLSL_TEXTURE(u_refractmap, v_tex_pos_clip.xy/v_tex_pos_clip.z).rgb;
+    srgb_to_lin(back_color);
+    a_color = a_color * back_color;
+    color_out += a_color;
+# node_endif
     // NOTE: using unused variable to pass shader verification
     normal;
 #endnode
@@ -532,6 +559,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_out vec3 normal
     #node_out vec3 e_color
     #node_out float emission
+    #node_out vec3 a_color
+    #node_out float alpha
 
     d_color = color_in;
     d_roughness = roughness_in;
@@ -548,6 +577,8 @@ vec2 vec_to_uv(vec3 vec)
     s_color;
     s_roughness;
     e_color;
+    a_color;
+    alpha;
 #endnode
 
 #node BSDF_GLASS
@@ -577,7 +608,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_out vec3 normal
     #node_out vec3 e_color
     #node_out float emission
-
+    #node_out vec3 a_color
+    #node_out float alpha
 
     s_color = color_in;
     s_roughness = roughness_in;
@@ -593,6 +625,9 @@ vec2 vec_to_uv(vec3 vec)
     surface;
     d_color;
     d_roughness;
+    e_color;
+    a_color;
+    alpha;
 #endnode
 
 #node BSDF_HAIR
@@ -609,10 +644,34 @@ vec2 vec_to_uv(vec3 vec)
 #endnode
 
 #node BSDF_TRANSPARENT
-    #node_in vec3 color
-    #node_out vec3 vec
-    vec = color;
+    #node_in vec3 color_in
+    #node_out vec3 surface
+    #node_out vec3 d_color
+    #node_out float d_roughness
+    #node_out vec3 s_color
+    #node_out float s_roughness
+    #node_out float metalness
+    #node_out vec3 normal
+    #node_out vec3 e_color
+    #node_out float emission
+    #node_out vec3 a_color
+    #node_out float alpha
+
+    a_color = color_in;
+    metalness = _0_0;
+    emission = _0_0;
+    alpha = _0_0;
+    normal = nin_normal;
+
+    // NOTE: using unused variable to pass shader verification
+    surface;
+    d_color;
+    d_roughness;
+    s_color;
+    s_roughness;
+    e_color;
 #endnode
+
 
 #node BSDF_TRANSLUCENT
     #node_in vec3 color
@@ -691,6 +750,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_out vec3 normal
     #node_out vec3 e_color
     #node_out float emission
+    #node_out vec3 a_color
+    #node_out float alpha
 
     e_color = strength_in * color_in;
     metalness = _0_0;
@@ -702,6 +763,8 @@ vec2 vec_to_uv(vec3 vec)
     d_roughness;
     s_color;
     s_roughness;
+    a_color;
+    alpha;
 #endnode
 
 #node AMBIENT_OCCLUSION
@@ -752,28 +815,47 @@ vec2 vec_to_uv(vec3 vec)
     height;
 #endnode
 
-#node NORMAL_MAP
-    #node_var SPACE NM_TANGENT
-    #node_in float strength
-    #node_in vec3 color
+#node DISPLACEMENT_BUMP
+    #node_in float height
     #node_out vec3 normal_out
 
-    vec3 bl_normal = nin_normal;
+    normal_out = nin_normal;
+    // NOTE: using unused variable to pass shader verification
+    height;
+#endnode
+
+#node NORMAL_MAP
+    #node_var SPACE NM_TANGENT
+    #node_var USE_NORMAL_IN 0
+    #node_in float strength
+    #node_in vec4 color
+    #node_in vec3 normal_in
+    #node_out vec3 normal_out
+
+# node_if USE_NORMAL_IN
+    vec3 bl_normal = normal_in;
+# node_else
+    vec3 bl_normal = nin_nmap_normal;
+# node_endif
 
 # node_if SPACE == NM_TANGENT
-    normal_out = nin_tbn_matrix * (color.xyz - _0_5);
+    normal_out = 2.0 * color.xyz - _1_0;
+    normal_out = nin_nmap_tbn_matrix * normal_out;
 
 # node_elif SPACE == NM_OBJECT || SPACE == NM_BLENDER_OBJECT
-    normal_out = color.xyz - _0_5;
-    normal_out.yz *= -1.0;
+    normal_out = 2.0 * color.xyz - _1_0;
+    // mimic blender behavior
+    normal_out.yz *= -_1_0;
     normal_out = tsr9_transform_dir(u_model_tsr, normal_out);
 
 # node_elif SPACE == NM_WORLD || SPACE == NM_BLENDER_WORLD
-    normal_out = color.xyz - _0_5;
-    normal_out.yz *= -1.0;
+    normal_out = 2.0 * color.xyz - _1_0;
+    // mimic blender behavior
+    normal_out.yz *= -_1_0;
 # node_endif
 
-    normal_out = normalize(mix(bl_normal, normal_out, strength));
+    float fac = max(strength, _0_0);
+    normal_out = normalize(mix(bl_normal, normal_out, fac));
 #endnode
 
 #node VECT_TRANSFORM
@@ -1062,6 +1144,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_in vec3  normal1
     #node_in vec3  e_color1
     #node_in float emission1
+    #node_in vec3  a_color1
+    #node_in float  alpha1
     #node_in vec3  d_color2
     #node_in float d_roughness2
     #node_in vec3  s_color2
@@ -1070,6 +1154,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_in vec3  normal2
     #node_in vec3  e_color2
     #node_in float emission2
+    #node_in vec3  a_color2
+    #node_in float  alpha2
     #node_out vec3  shader_out
     #node_out vec3  d_color_out
     #node_out float d_roughness_out
@@ -1079,6 +1165,8 @@ vec2 vec_to_uv(vec3 vec)
     #node_out vec3  normal_out
     #node_out vec3  e_color_out
     #node_out float emission_out
+    #node_out vec3  a_color_out
+    #node_out float alpha_out
 
     float clamped_factor = clamp(factor, _0_0, _1_0);
 
@@ -1114,6 +1202,8 @@ vec2 vec_to_uv(vec3 vec)
     metalness_out = mix(metalness1, metalness2, clamped_factor);
     normal_out = mix(normal1, normal2, clamped_factor);
     emission_out = mix(emission1, emission2, clamped_factor);
+    a_color_out = mix(a_color1, a_color2, clamped_factor);
+    alpha_out = mix(alpha1, alpha2, clamped_factor);
 #endnode
 
 #node UV_MERGED
@@ -1312,15 +1402,15 @@ vec2 vec_to_uv(vec3 vec)
 
     vec = vec_in;
 #node_if READ_R
-    vec.r = (GLSL_TEXTURE(u_nodes_texture, vec2(0.5 * vec_in.r + 0.5, NODE_TEX_ROW)).r - 0.5) * 2.0;
+    vec.r = (GLSL_TEXTURE(u_nodes_texture, vec2(_0_5 * vec_in.r + _0_5, NODE_TEX_ROW)).r - _0_5) * 2.0;
 #node_endif
 
 #node_if READ_G
-    vec.g = (GLSL_TEXTURE(u_nodes_texture, vec2(0.5 * vec_in.g + 0.5, NODE_TEX_ROW)).g - 0.5) * 2.0;
+    vec.g = (GLSL_TEXTURE(u_nodes_texture, vec2(_0_5 * vec_in.g + _0_5, NODE_TEX_ROW)).g - _0_5) * 2.0;
 #node_endif
 
 #node_if READ_B
-    vec.b = (GLSL_TEXTURE(u_nodes_texture, vec2(0.5 * vec_in.b + 0.5, NODE_TEX_ROW)).b - 0.5) * 2.0;
+    vec.b = (GLSL_TEXTURE(u_nodes_texture, vec2(_0_5 * vec_in.b + _0_5, NODE_TEX_ROW)).b - _0_5) * 2.0;
 #node_endif
 
     vec = mix(vec_in, vec, factor);
@@ -1331,7 +1421,7 @@ vec2 vec_to_uv(vec3 vec)
     #node_var READ_R 0
     #node_var READ_G 0
     #node_var READ_B 0
-    #node_var NODE_TEX_ROW 0.0
+    #node_var NODE_TEX_ROW _0_0
     #node_in float factor
     #node_in vec3 vec_in
     #node_out vec3 vec
@@ -1369,7 +1459,7 @@ vec2 vec_to_uv(vec3 vec)
 
 // ColorRamp node
 #node VALTORGB
-    #node_var NODE_TEX_ROW 0.0
+    #node_var NODE_TEX_ROW _0_0
     #node_in float factor
     #node_out vec3 color
     #node_out float alpha
@@ -1381,19 +1471,19 @@ vec2 vec_to_uv(vec3 vec)
 
 #node MAPPING
     #node_var MAPPING_SCALE_DEF 0
-    #node_var MAPPING_SCALE vec3(1.0)
+    #node_var MAPPING_SCALE vec3(_1_0)
 
     #node_var MAPPING_TRANS_DEF 0
-    #node_var MAPPING_TRANS vec3(0.0)
+    #node_var MAPPING_TRANS vec3(_0_0)
 
     #node_var MAPPING_TRS_MATRIX_DEF 0
-    #node_var MAPPING_TRS_MATRIX mat4(1.0)
+    #node_var MAPPING_TRS_MATRIX mat4(_1_0)
     
     #node_var MAPPING_MIN_CLIP_DEF 0
-    #node_var MAPPING_MIN_CLIP vec3(0.0)
+    #node_var MAPPING_MIN_CLIP vec3(_0_0)
 
     #node_var MAPPING_MAX_CLIP_DEF 0
-    #node_var MAPPING_MAX_CLIP vec3(1.0)
+    #node_var MAPPING_MAX_CLIP vec3(_1_0)
 
     #node_var MAPPING_IS_NORMAL 0
 
@@ -2002,6 +2092,13 @@ vec2 vec_to_uv(vec3 vec)
     nout_alpha = alpha_in;
 #endnode
 
+#node OUTPUT_SURFACE
+    #node_in vec3 color_in
+
+    nout_color = color_in;
+    nout_alpha = _1_0;
+#endnode
+
 #node MATERIAL_BEGIN
     #node_var MATERIAL_EXT 0
     #node_var USE_MATERIAL_NORMAL 0
@@ -2048,7 +2145,7 @@ vec2 vec_to_uv(vec3 vec)
 
     // ambient
     A = nin_ambient * u_environment_energy * get_environment_color(normal);
-    shadow_factor = vec4(1.0);
+    shadow_factor = vec4(_1_0);
 #  node_if NUM_LIGHTS > 0
     // diffuse
     dif_params = vec2(diffuse_params[0], diffuse_params[1]);
@@ -2509,17 +2606,17 @@ reflect_factor;
 
     sfactor = _0_0;
     if (lfac.g == _1_0) {
-        if (sp_params[0] < 1.0 || sp_params[1] == _0_0)
+        if (sp_params[0] < _1_0 || sp_params[1] == _0_0)
             sfactor = _0_0;
         else {
             if (sp_params[1] < 100.0)
-                sp_params[1]= sqrt(1.0 / sp_params[1]);
+                sp_params[1]= sqrt(_1_0 / sp_params[1]);
             else
                 sp_params[1]= 10.0 / sp_params[1];
 
             vec3 halfway = normalize(nin_eye_dir + ldir);
 # node_if MAT_USE_TBN_SHADING
-            float nh = 0.0;
+            float nh = _0_0;
             if (norm_fac == _0_0) {
                 float dot_ht = dot(v_tangent.xyz, halfway);
                 nh = sqrt(_1_0 - dot_ht * dot_ht);
@@ -2594,16 +2691,14 @@ reflect_factor;
         color_out += spot_intensity * mix(vec4(D, _1_0), vec4(_1_0),
                 spot_diff_factor) * translucency_color
                 * vec4(lcolorint * ln * vec3(transmit_coeff), _1_0);
-        specular_out = specular_in;
     } else {
         // frontside lighting
-        specular_out = specular_in + lcolorint * S * sfactor;
         color_out = color_in + vec4(lcolorint * D * lfactor, sfactor);
     }
 #node_else
-    specular_out = specular_in + lcolorint * S * sfactor;
     color_out = color_in + vec4(lcolorint * D * lfactor, sfactor);
 #node_endif
+    specular_out = specular_in + lcolorint * S * sfactor;
 #endnode
 
 #node RGB
@@ -2990,7 +3085,7 @@ reflect_factor;
 
         float h = GLSL_TEXTURE(texture, texcoord).a; // get height
 
-        for (float i = 1.0; i <= steps; i++)
+        for (float i = _1_0; i <= steps; i++)
         {
             if (h < height) {
                 height   -= pstep;
@@ -3104,37 +3199,52 @@ void nodes_main(in vec3 nin_eye_dir,
         || USE_NODE_BSDF_BEGIN || USE_NODE_FRESNEL || USE_NODE_TEX_COORD_RE \
         || USE_NODE_LAYER_WEIGHT || USE_NODE_BUMP
 
-    vec3 normal = normalize(v_normal);
-    vec3 sided_normal = normal;
+    vec3 unnorm_sided_normal = v_normal;
+
 # if DOUBLE_SIDED_LIGHTING || USE_NODE_GEOMETRY_NO
     // NOTE: workaround for some bug with gl_FrontFacing on Intel graphics
     // or open-source drivers
-#if REFLECTION_PASS == REFL_PASS_PLANE
+#  if REFLECTION_PASS == REFL_PASS_PLANE
     if (gl_FrontFacing == false)
-#else
+#  else
     if (gl_FrontFacing)
-#endif
-        sided_normal = sided_normal;
+#  endif
+        unnorm_sided_normal = unnorm_sided_normal;
     else
-        sided_normal = -sided_normal;
+        unnorm_sided_normal = -unnorm_sided_normal;
+# endif
+
+    // NOTE: be very careful with normalization of interpolated normal
+# if USE_NODE_NORMAL_MAP
+    vec3 nin_nmap_normal = unnorm_sided_normal;
+# endif
+
+# if DOUBLE_SIDED_LIGHTING || USE_NODE_GEOMETRY_NO || USE_NODE_TEXTURE_NORMAL \
+        || USE_NODE_B4W_PARALLAX
+    vec3 norm_sided_normal = normalize(unnorm_sided_normal);
 # endif
 
 # if DOUBLE_SIDED_LIGHTING
-    vec3 nin_normal = sided_normal;
+    vec3 nin_normal = norm_sided_normal;
 # else
-    vec3 nin_normal = normal;
+    vec3 nin_normal = normalize(v_normal);
 # endif
 
 # if USE_NODE_GEOMETRY_NO
-    vec3 nin_geom_normal = sided_normal;
+    vec3 nin_geom_normal = norm_sided_normal;
 # endif
 #endif
 
 #if CALC_TBN_SPACE
-    vec3 binormal = cross(sided_normal, v_tangent.xyz) * v_tangent.w;
-    binormal = normalize(binormal);
-    vec3 tangent = cross(binormal, sided_normal) * v_tangent.w;
-    mat3 nin_tbn_matrix = mat3(tangent, binormal, sided_normal);
+# if USE_NODE_TEXTURE_NORMAL || USE_NODE_B4W_PARALLAX
+    vec3 binormal = cross(norm_sided_normal, v_tangent.xyz) * v_tangent.w;
+    mat3 nin_tbn_matrix = mat3(v_tangent.xyz, binormal, norm_sided_normal);
+# endif
+
+# if USE_NODE_NORMAL_MAP
+    vec3 binormal = cross(unnorm_sided_normal, v_tangent.xyz) * v_tangent.w;
+    mat3 nin_nmap_tbn_matrix = mat3(v_tangent.xyz, binormal, unnorm_sided_normal);
+# endif
 #endif
 
     // NOTE: array uniforms used in nodes can't be renamed:

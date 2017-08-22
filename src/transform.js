@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,17 +39,11 @@ var m_vec3     = require("__vec3");
 var _vec3_tmp  = new Float32Array(3);
 var _vec3_tmp2 = new Float32Array(3);
 var _quat_tmp = new Float32Array(4);
-var _mat3_tmp  = new Float32Array(9);
 var _tsr_tmp   = m_tsr.create();
 var _tsr_tmp2  = m_tsr.create();
 
 var _elapsed = 0;
 var _update_counter = 0;
-
-// transform in world space
-exports.SPACE_WORLD = 0;
-// transform in local space
-exports.SPACE_LOCAL = 1;
 
 exports.update = function(elapsed) {
     _elapsed = elapsed;
@@ -146,13 +140,13 @@ exports.set_rotation_euler_rel = function(obj, euler) {
 
 exports.get_rotation_euler = function(obj, dest) {
     var quat = get_rotation(obj, _quat_tmp);
-    dest = m_util.quat_to_euler(euler, dest);
+    dest = m_util.quat_to_euler(quat, dest);
     return dest;
 }
 
 exports.get_rotation_euler_rel = function(obj, dest) {
     var quat = get_rotation_rel(obj, _quat_tmp);
-    dest = m_util.quat_to_euler(euler, dest);
+    dest = m_util.quat_to_euler(quat, dest);
     return dest;
 }
 
@@ -304,29 +298,18 @@ function update_transform(obj) {
     if (obj_type == "CAMERA")
         m_cam.update_camera(obj);
 
-    // should not change after constraint update
-    var trans = m_tsr.get_trans(render.world_tsr, _vec3_tmp);
-    var quat = m_tsr.get_quat(render.world_tsr, _quat_tmp);
-
     m_bounds.bounding_box_transform(render.bb_local, render.world_tsr, render.bb_world);
     m_bounds.bounding_sphere_transform(render.bs_local, render.world_tsr, render.bs_world);
 
-    if (render.use_batches_boundings) {
-        for (var i = 0; i < scenes_data.length; i++) {
-            var batches = scenes_data[i].batches;
-            for (var j = 0; j < batches.length; j++) {
-                var batch = batches[j];
-                m_bounds.bounding_box_transform(batch.bb_local,
-                        render.world_tsr, batch.bb_world);
-                m_bounds.bounding_sphere_transform(batch.bs_local,
-                        render.world_tsr, batch.bs_world);
-                if (batch.use_be)
-                    m_bounds.bounding_ellipsoid_transform(batch.be_local,
-                            render.world_tsr, batch.be_world);
-            }
+    for (var i = 0; i < scenes_data.length; i++) {
+        var batches = scenes_data[i].batches;
+        for (var j = 0; j < batches.length; j++) {
+            var batch = batches[j];
+            var batch_world_bounds = scenes_data[i].batch_world_bounds[j];
+            m_obj_util.update_world_bounds_from_batch_tsr(batch, 
+                    render.world_tsr, batch_world_bounds);
         }
-    } else if (render.use_be)
-        m_bounds.bounding_ellipsoid_transform(render.be_local, render.world_tsr, render.be_world)
+    }
 
     switch (obj_type) {
     case "MESH":
@@ -357,6 +340,10 @@ function update_transform(obj) {
         break;
     }
 
+    // should not change after constraint update
+    var trans = m_tsr.get_trans(render.world_tsr, _vec3_tmp);
+    var quat = m_tsr.get_quat(render.world_tsr, _quat_tmp);
+
     for (var i = 0; i < scenes_data.length; i++) {
         var sc_data = scenes_data[i];
         if (sc_data.is_active) {
@@ -378,20 +365,22 @@ function update_transform(obj) {
                 m_obj.update_force(obj);
                 break;
             case "CAMERA":
-                m_scs.schedule_grass_map_update(scene);
-                if (sc_render.shadow_params) {
-                    // camera movement only influence csm shadows
-                    if (sc_render.shadow_params.enable_csm)
-                        m_scs.schedule_shadow_update(scene);
-                    var cam_scene_data = m_obj_util.get_scene_data(obj, scene);
-                    var cam_main = cam_scene_data.cameras[0];
-                    m_scs.update_shadow_billboard_view(cam_main, sc_render.graph);
+                // scene update only for the active camera
+                if (m_scs.get_active() == scene && m_scs.get_camera(scene) == obj) {
+                    m_scs.schedule_grass_map_update(scene);
+                    if (sc_render.shadow_params) {
+                        // camera movement only influence csm shadows
+                        if (sc_render.shadow_params.enable_csm 
+                                || sc_render.shadow_params.dynamic_grass_cast)
+                            m_scs.schedule_shadow_update(scene);
+                        var cam_scene_data = m_obj_util.get_scene_data(obj, scene);
+                        var cam_main = cam_scene_data.cameras[0];
+                        m_scs.update_shadow_billboard_view(cam_main, sc_render.graph);
+                    }
+                    
+                    m_sfx.listener_update_transform(scene, trans, quat, _elapsed, 
+                            _update_counter);
                 }
-                // listener only for active scene camera
-                if (m_scs.get_active() == scene &&
-                        m_scs.get_camera(scene) == obj)
-                    m_sfx.listener_update_transform(scene, trans, quat,
-                            _elapsed, _update_counter);
                 break;
             case "LAMP":
                 m_scs.update_lamp_scene(obj, scene);
@@ -434,17 +423,6 @@ exports.distance = function(obj1, obj2) {
 exports.obj_point_distance = function(obj, point) {
     var trans = m_tsr.get_trans(obj.render.world_tsr, _vec3_tmp);
     return m_vec3.dist(trans, point);
-}
-
-exports.get_object_bounding_box = function(obj) {
-    return {
-        max_x: obj.render.bb_world.max_x,
-        min_x: obj.render.bb_world.min_x,
-        max_y: obj.render.bb_world.max_y,
-        min_y: obj.render.bb_world.min_y,
-        max_z: obj.render.bb_world.max_z,
-        min_z: obj.render.bb_world.min_z
-    };
 }
 
 }

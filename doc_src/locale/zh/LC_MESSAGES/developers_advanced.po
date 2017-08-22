@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Blend4Web. User Manual v16.03\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-12-16 15:05+0300\n"
-"PO-Revision-Date: 2016-12-01 17:08+0800\n"
+"POT-Creation-Date: 2017-04-20 16:04+0300\n"
+"PO-Revision-Date: 2016-12-23 18:02+0800\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -351,11 +351,12 @@ msgid "TeX Live"
 msgstr "TeX Live"
 
 #: ../developers_advanced.rst:181
-#, fuzzy
 msgid ""
 "texlive texlive-latex-extra texlive-lang-cyrillic texlive-lang-chinese "
 "texlive-xetex"
-msgstr "texlive texlive-latex-extra texlive-lang-cyrillic"
+msgstr ""
+"texlive texlive-latex-extra texlive-lang-cyrillic texlive-lang-chinese "
+"texlive-xetex"
 
 #: ../developers_advanced.rst:181
 msgid "building the manual (PDF version)"
@@ -497,10 +498,10 @@ msgstr "引擎调试在 ``debug.js`` 模块方法进行。"
 msgid ""
 "The structure of the current render graph can be saved in the DOT format "
 "using the ``b4w.debug.scenegraph_to_dot()`` call, for example, in the "
-"browser console. After calling this method, save the console's output "
-"into the file with the .gv extension. To get the graph in a visual form "
-"the `graphviz <http://www.graphviz.org/>`_ utilities are required. "
-"Converting to the SVG format is performed using the command:"
+"browser console. After calling this method, save the console output into "
+"the file with the .gv extension. To get the graph in a visual form the "
+"`graphviz <http://www.graphviz.org/>`_ utilities are required. Converting"
+" to the SVG format is performed using the command:"
 msgstr ""
 "当前的渲染图的结构可以用 ``b4w.debug.scenegraph_to_dot()`` "
 "调用，例如，在浏览器的控制台被保存在DOT格式。调用此方法后，保存控制台输出与.gv扩展名的文件。为了得到在视觉形式图表中的 `graphviz的"
@@ -602,7 +603,7 @@ msgid "checking the conformance of shaders to the import/export mechanism,"
 msgstr "检查着色器的一致性导入/导出机制，"
 
 #: ../developers_advanced.rst:295
-msgid "removing odd or repetitive tokens: spaces, endlines and semicolons."
+msgid "removing odd or repetitive tokens: spaces, line ends and semicolons."
 msgstr "去除奇数或重复的标记：空格，endlines和分号。"
 
 #: ../developers_advanced.rst:301
@@ -785,7 +786,7 @@ msgstr "多级包括或相同的多个纳入到包括不支持相同的着色器
 
 #: ../developers_advanced.rst:424
 msgid ""
-"The shader's malfunction can also be caused by nontrivial using of "
+"Shader malfunction can also be caused by nontrivial using of "
 "preprocessing, for example, creating an invalid GLSL code:"
 msgstr "着色器的故障也可以通过使用非平凡的预处理，例如，创建一个无效的GLSL代码引起的："
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Blend4Web 16.08\n"
 "Report-Msgid-Bugs-To: https://www.blend4web.com/en/forums/forum/17/\n"
-"POT-Creation-Date: 2016-12-16 15:05+0300\n"
+"POT-Creation-Date: 2017-04-20 16:04+0300\n"
 "PO-Revision-Date: 2015-08-28 10:55+0300\n"
 "Last-Translator: Blend4Web Team <info [at] blend4web.com>\n"
 "Language-Team: Russian <info [at] blend4web.com>\n"
@@ -159,7 +159,6 @@ msgid "build script: ``csrc/b4w_bin/build.py``"
 msgstr "скрипт сборки: ``csrc/b4w_bin/build.py``"
 
 #: ../developers_advanced.rst:122
-#, fuzzy
 msgid "Blend4Web addon: ``addons/blend4web/``"
 msgstr "аддон Blend4Web: ``blender_scripts/addons/blend4web/``"
 
@@ -202,7 +201,7 @@ msgstr "Название"
 
 #: ../developers_advanced.rst:146
 msgid "Ubuntu 16.04 package"
-msgstr ""
+msgstr "Ubuntu 16.04 package"
 
 #: ../developers_advanced.rst:146
 msgid "Purpose"
@@ -210,7 +209,7 @@ msgstr "Назначение"
 
 #: ../developers_advanced.rst:149
 msgid "Bash"
-msgstr ""
+msgstr "Bash"
 
 #: ../developers_advanced.rst:149 ../developers_advanced.rst:151
 msgid "included by default"
@@ -222,15 +221,15 @@ msgstr "интерпретатор скриптов"
 
 #: ../developers_advanced.rst:151
 msgid "Python 3"
-msgstr ""
+msgstr "Python 3"
 
 #: ../developers_advanced.rst:153
 msgid "NodeJS"
-msgstr ""
+msgstr "NodeJS"
 
 #: ../developers_advanced.rst:153
 msgid "nodejs"
-msgstr ""
+msgstr "nodejs"
 
 #: ../developers_advanced.rst:153 ../developers_advanced.rst:254
 #: ../developers_advanced.rst:285 ../developers_advanced.rst:298
@@ -238,15 +237,15 @@ msgstr ""
 #: ../developers_advanced.rst:387 ../developers_advanced.rst:442
 #: ../developers_advanced.rst:452
 msgid "compiling shaders"
-msgstr "копиляция шейдеров"
+msgstr "компиляция шейдеров"
 
 #: ../developers_advanced.rst:155
 msgid "Java"
-msgstr ""
+msgstr "Java"
 
 #: ../developers_advanced.rst:155
 msgid "default-jre"
-msgstr ""
+msgstr "default-jre"
 
 #: ../developers_advanced.rst:155
 msgid "compiling and obfuscating the engine modules"
@@ -254,11 +253,11 @@ msgstr "компиляция и обфускация модулей движка
 
 #: ../developers_advanced.rst:158
 msgid "ImageMagick"
-msgstr ""
+msgstr "ImageMagick"
 
 #: ../developers_advanced.rst:158
 msgid "imagemagick"
-msgstr ""
+msgstr "imagemagick"
 
 #: ../developers_advanced.rst:158 ../developers_advanced.rst:160
 msgid "converting textures"
@@ -266,19 +265,19 @@ msgstr "конвертация текстур"
 
 #: ../developers_advanced.rst:160
 msgid "NVIDIA Texture Tools"
-msgstr ""
+msgstr "NVIDIA Texture Tools"
 
 #: ../developers_advanced.rst:160
 msgid "libnvtt-bin"
-msgstr ""
+msgstr "libnvtt-bin"
 
 #: ../developers_advanced.rst:162
 msgid "Libav"
-msgstr ""
+msgstr "Libav"
 
 #: ../developers_advanced.rst:162
 msgid "libav-tools"
-msgstr ""
+msgstr "libav-tools"
 
 #: ../developers_advanced.rst:162
 msgid "converting media resources"
@@ -286,11 +285,11 @@ msgstr "конвертация медиаресурсов"
 
 #: ../developers_advanced.rst:164
 msgid "NVIDIA Cg Toolkit"
-msgstr ""
+msgstr "NVIDIA Cg Toolkit"
 
 #: ../developers_advanced.rst:164
 msgid "nvidia-cg-toolkit"
-msgstr ""
+msgstr "nvidia-cg-toolkit"
 
 #: ../developers_advanced.rst:164
 msgid "debugging shaders"
@@ -298,11 +297,11 @@ msgstr "отладка шейдеров"
 
 #: ../developers_advanced.rst:166
 msgid "OptiPNG"
-msgstr ""
+msgstr "OptiPNG"
 
 #: ../developers_advanced.rst:166
 msgid "optipng"
-msgstr ""
+msgstr "optipng"
 
 #: ../developers_advanced.rst:166
 msgid "optimizing PNG files"
@@ -310,7 +309,7 @@ msgstr "оптимизация PNG-файлов"
 
 #: ../developers_advanced.rst:168
 msgid "Emscripten"
-msgstr ""
+msgstr "Emscripten"
 
 #: ../developers_advanced.rst:168
 msgid "`from EMSDK source code`_"
@@ -322,11 +321,11 @@ msgstr "сборка Uranium"
 
 #: ../developers_advanced.rst:170
 msgid "Gnuplot"
-msgstr ""
+msgstr "Gnuplot"
 
 #: ../developers_advanced.rst:170
 msgid "gnuplot"
-msgstr ""
+msgstr "gnuplot"
 
 #: ../developers_advanced.rst:170 ../developers_advanced.rst:172
 #: ../developers_advanced.rst:174
@@ -335,23 +334,23 @@ msgstr "отладка"
 
 #: ../developers_advanced.rst:172
 msgid "Graphviz"
-msgstr ""
+msgstr "Graphviz"
 
 #: ../developers_advanced.rst:172
 msgid "graphviz"
-msgstr ""
+msgstr "graphviz"
 
 #: ../developers_advanced.rst:174
 msgid "xsel"
-msgstr ""
+msgstr "xsel"
 
 #: ../developers_advanced.rst:176
 msgid "Sphinx"
-msgstr ""
+msgstr "Sphinx"
 
 #: ../developers_advanced.rst:176
 msgid "python3-sphinx"
-msgstr ""
+msgstr "python3-sphinx"
 
 #: ../developers_advanced.rst:176
 msgid "building the manual"
@@ -359,7 +358,7 @@ msgstr "сборка документации"
 
 #: ../developers_advanced.rst:178
 msgid "sphinx-intl"
-msgstr ""
+msgstr "sphinx-intl"
 
 #: ../developers_advanced.rst:178
 msgid "installed with PIP v3 (pip3 install sphinx-intl)"
@@ -371,13 +370,15 @@ msgstr "сборка документации (перевод)"
 
 #: ../developers_advanced.rst:181
 msgid "TeX Live"
-msgstr ""
+msgstr "TeX Live"
 
 #: ../developers_advanced.rst:181
 msgid ""
 "texlive texlive-latex-extra texlive-lang-cyrillic texlive-lang-chinese "
 "texlive-xetex"
 msgstr ""
+"texlive texlive-latex-extra texlive-lang-cyrillic texlive-lang-chinese "
+"texlive-xetex"
 
 #: ../developers_advanced.rst:181
 msgid "building the manual (PDF version)"
@@ -385,7 +386,7 @@ msgstr "сборка документации (PDF-версия)"
 
 #: ../developers_advanced.rst:186
 msgid "JSDoc 3"
-msgstr ""
+msgstr "JSDoc 3"
 
 #: ../developers_advanced.rst:186
 msgid "installed with NPM (npm install -g jsdoc)"
@@ -397,7 +398,7 @@ msgstr "сборка документации (документация на API
 
 #: ../developers_advanced.rst:189
 msgid "PEG.js"
-msgstr ""
+msgstr "PEG.js"
 
 #: ../developers_advanced.rst:189
 msgid "`from PEG.js source code`_"
@@ -421,7 +422,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:202
 msgid "*init_*"
-msgstr ""
+msgstr "*init_*"
 
 #: ../developers_advanced.rst:202
 msgid "create an abstract object"
@@ -429,7 +430,7 @@ msgstr "создание абстрактного объекта"
 
 #: ../developers_advanced.rst:205
 msgid "*create_*"
-msgstr ""
+msgstr "*create_*"
 
 #: ../developers_advanced.rst:205
 msgid "create a certain object"
@@ -437,7 +438,7 @@ msgstr "создание конкретного объекта"
 
 #: ../developers_advanced.rst:208
 msgid "*update_*"
-msgstr ""
+msgstr "*update_*"
 
 #: ../developers_advanced.rst:208
 msgid "update the state of an existing object"
@@ -445,7 +446,7 @@ msgstr "обновить состояние имеющегося объекта"
 
 #: ../developers_advanced.rst:211
 msgid "*attach_/detach_*"
-msgstr ""
+msgstr "*attach_/detach_*"
 
 #: ../developers_advanced.rst:211
 msgid "add/remove a temporary object property"
@@ -453,7 +454,7 @@ msgstr "добавить/удалить временное свойство к �
 
 #: ../developers_advanced.rst:214
 msgid "*append_/remove_*"
-msgstr ""
+msgstr "*append_/remove_*"
 
 #: ../developers_advanced.rst:214
 msgid ""
@@ -463,7 +464,7 @@ msgstr "добавить/удалить временное свойство к �
 
 #: ../developers_advanced.rst:217
 msgid "*insert_/pop_*"
-msgstr ""
+msgstr "*insert_/pop_*"
 
 #: ../developers_advanced.rst:217
 msgid "add/remove an array element (accessed by index)"
@@ -471,15 +472,15 @@ msgstr "добавить/удалить элемент массива (дост�
 
 #: ../developers_advanced.rst:220
 msgid "*switch_*"
-msgstr ""
+msgstr "*switch_*"
 
 #: ../developers_advanced.rst:220
 msgid "switch flag's binary value"
-msgstr ""
+msgstr "изменить значение бинарной величины/флага"
 
 #: ../developers_advanced.rst:223
 msgid "*apply_/clear_*"
-msgstr ""
+msgstr "*apply_/clear_*"
 
 #: ../developers_advanced.rst:223
 msgid "operation with flags, binary values or arbitrary parameters"
@@ -487,7 +488,7 @@ msgstr "операция с флагом, бинарной величиной и
 
 #: ../developers_advanced.rst:226
 msgid "*set_/get_*"
-msgstr ""
+msgstr "*set_/get_*"
 
 #: ../developers_advanced.rst:226
 msgid "set/get the property/variable value"
@@ -495,7 +496,7 @@ msgstr "установить/получить значение свойства/
 
 #: ../developers_advanced.rst:229
 msgid "*_tmp*"
-msgstr ""
+msgstr "*_tmp*"
 
 #: ../developers_advanced.rst:229
 msgid "global variable - cache in the form of a simple object (array, vector)"
@@ -503,7 +504,7 @@ msgstr "глобальная переменная - кеш в виде прос�
 
 #: ../developers_advanced.rst:234
 msgid "*_cache*"
-msgstr ""
+msgstr "*_cache*"
 
 #: ../developers_advanced.rst:232
 msgid "global variable - cache in the form of a complex object"
@@ -521,10 +522,10 @@ msgstr "Отладка движка производится с помощью �
 msgid ""
 "The structure of the current render graph can be saved in the DOT format "
 "using the ``b4w.debug.scenegraph_to_dot()`` call, for example, in the "
-"browser console. After calling this method, save the console's output "
-"into the file with the .gv extension. To get the graph in a visual form "
-"the `graphviz <http://www.graphviz.org/>`_ utilities are required. "
-"Converting to the SVG format is performed using the command:"
+"browser console. After calling this method, save the console output into "
+"the file with the .gv extension. To get the graph in a visual form the "
+"`graphviz <http://www.graphviz.org/>`_ utilities are required. Converting"
+" to the SVG format is performed using the command:"
 msgstr ""
 "Структура текущего рендер-графа может быть сохранена в формате DOT с "
 "помощью вызова ``b4w.debug.scenegraph_to_dot()``, например, в консоли "
@@ -641,7 +642,7 @@ msgid "checking the conformance of shaders to the import/export mechanism,"
 msgstr "проверка шейдеров на соответствие import/export-механизма,"
 
 #: ../developers_advanced.rst:295
-msgid "removing odd or repetitive tokens: spaces, endlines and semicolons."
+msgid "removing odd or repetitive tokens: spaces, line ends and semicolons."
 msgstr "удаление лишних пробелов, переводов строк и повторяющихся символов \";\"."
 
 #: ../developers_advanced.rst:301
@@ -880,7 +881,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:424
 msgid ""
-"The shader's malfunction can also be caused by nontrivial using of "
+"Shader malfunction can also be caused by nontrivial using of "
 "preprocessing, for example, creating an invalid GLSL code:"
 msgstr ""
 "К неработоспособности шейдера может привести нетривиальное использование "
@@ -933,7 +934,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:449
 msgid "OES_standard_derivatives"
-msgstr ""
+msgstr "OES_standard_derivatives"
 
 #: ../developers_advanced.rst:455
 msgid "Compilation Errors"
@@ -959,7 +960,7 @@ msgstr "Причина"
 
 #: ../developers_advanced.rst:464
 msgid "Error! Ambiguous obfuscation in include file 'FILE_NAME'."
-msgstr ""
+msgstr "Error! Ambiguous obfuscation in include file 'FILE_NAME'."
 
 #: ../developers_advanced.rst:464
 msgid "Ambiguous obfuscation in the 'FILE_NAME' include file."
@@ -967,7 +968,7 @@ msgstr "Ошибка! Неоднозначная обфускация include-ф
 
 #: ../developers_advanced.rst:467
 msgid "Error! Extension NAME is unsupported in obfuscator. File: 'FILE_NAME'."
-msgstr ""
+msgstr "Error! Extension NAME is unsupported in obfuscator. File: 'FILE_NAME'."
 
 #: ../developers_advanced.rst:467
 msgid ""
@@ -979,7 +980,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:471
 msgid "Error! Include 'FILE_NAME' not found."
-msgstr ""
+msgstr "Error! Include 'FILE_NAME' not found."
 
 #: ../developers_advanced.rst:471
 msgid "The FILE_NAME include file could not be found."
@@ -987,7 +988,7 @@ msgstr "Ошибка! При подключении не найден include-ф
 
 #: ../developers_advanced.rst:474
 msgid "Error! Undeclared TYPE: 'NAME'. File: 'FILE_NAME'."
-msgstr ""
+msgstr "Error! Undeclared TYPE: 'NAME'. File: 'FILE_NAME'."
 
 #: ../developers_advanced.rst:474
 msgid ""
@@ -999,7 +1000,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:478
 msgid "Error! Undeclared TYPE: 'NAME'. Importing data missed. File: 'FILE_NAME'."
-msgstr ""
+msgstr "Error! Undeclared TYPE: 'NAME'. Importing data missed. File: 'FILE_NAME'."
 
 #: ../developers_advanced.rst:478
 msgid ""
@@ -1016,6 +1017,8 @@ msgid ""
 "Error! Undeclared TYPE: 'NAME'. Possibly exporting needed in include file"
 " 'INCLUDE_NAME'. File: 'FILE_NAME'."
 msgstr ""
+"Error! Undeclared TYPE: 'NAME'. Possibly exporting needed in include file"
+" 'INCLUDE_NAME'. File: 'FILE_NAME'."
 
 #: ../developers_advanced.rst:484
 msgid ""
@@ -1032,6 +1035,8 @@ msgid ""
 "Error! Undeclared TYPE: 'NAME'. Possibly importing needed. File: "
 "'FILE_NAME'."
 msgstr ""
+"Error! Undeclared TYPE: 'NAME'. Possibly importing needed. File: "
+"'FILE_NAME'."
 
 #: ../developers_advanced.rst:490
 msgid ""
@@ -1045,7 +1050,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:495
 msgid "Error! Unused export token 'NAME' in include file 'FILE_NAME'."
-msgstr ""
+msgstr "Error! Unused export token 'NAME' in include file 'FILE_NAME'."
 
 #: ../developers_advanced.rst:495
 msgid ""
@@ -1057,7 +1062,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:502
 msgid "Error! Using reserved word in TYPE 'NAME'. File: 'FILE_NAME'."
-msgstr ""
+msgstr "Error! Using reserved word in TYPE 'NAME'. File: 'FILE_NAME'."
 
 #: ../developers_advanced.rst:502
 msgid ""
@@ -1073,6 +1078,8 @@ msgid ""
 "Error! 'all' extension cannot have BEHAVIOR_TYPE behavior. File: "
 "'FILE_NAME'."
 msgstr ""
+"Error! 'all' extension cannot have BEHAVIOR_TYPE behavior. File: "
+"'FILE_NAME'."
 
 #: ../developers_advanced.rst:507
 msgid ""
@@ -1088,6 +1095,8 @@ msgid ""
 "Syntax Error. ERROR_MESSAGE. File: FILE_NAME, line: LINE_NUMBER, column: "
 "COL_NUMBER."
 msgstr ""
+"Syntax Error. ERROR_MESSAGE. File: FILE_NAME, line: LINE_NUMBER, column: "
+"COL_NUMBER."
 
 #: ../developers_advanced.rst:512
 msgid ""
@@ -1108,6 +1117,8 @@ msgid ""
 "Warning! Function 'NAME' is declared in [include ]file FILE_NAME, but "
 "never used."
 msgstr ""
+"Warning! Function 'NAME' is declared in [include ]file FILE_NAME, but "
+"never used."
 
 #: ../developers_advanced.rst:522
 msgid "An unused function NAME is declared in the FILE_NAME file."
@@ -1118,6 +1129,8 @@ msgid ""
 "Warning! Include file 'FILE_NAME' not used in any shader, would be "
 "omitted!"
 msgstr ""
+"Warning! Include file 'FILE_NAME' not used in any shader, would be "
+"omitted!"
 
 #: ../developers_advanced.rst:526
 msgid ""
@@ -1129,7 +1142,7 @@ msgstr ""
 
 #: ../developers_advanced.rst:530
 msgid "Warning! Unused import token 'NAME' in include file 'FILE_NAME'."
-msgstr ""
+msgstr "Warning! Unused import token 'NAME' in include file 'FILE_NAME'."
 
 #: ../developers_advanced.rst:530
 msgid "An unused id NAME is imported in the FILE_NAME include file."
@@ -1142,6 +1155,8 @@ msgid ""
 "Warning! Variable 'NAME' is declared in include file FILE_NAME, but never"
 " used."
 msgstr ""
+"Warning! Variable 'NAME' is declared in include file FILE_NAME, but never"
+" used."
 
 #: ../developers_advanced.rst:533
 msgid "An unused variable NAME is declared in the FILE_NAME file."

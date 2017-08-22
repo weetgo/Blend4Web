@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,9 @@ b4w.module["__input"] = function(exports, require) {
 var m_compat = require("__compat");
 var m_cont  = require("__container");
 var m_cfg   = require("__config");
+var m_mat4  = require("__mat4");
 var m_print = require("__print");
+var m_tsr   = require("__tsr");
 var m_quat  = require("__quat");
 var m_util  = require("__util");
 var m_vec3  = require("__vec3");
@@ -36,6 +38,9 @@ var m_vec4  = require("__vec4");
 
 var cfg_def = m_cfg.defaults;
 var cfg_hmdp = m_cfg.hmd_params;
+
+var _tsr_tmp = m_tsr.create();
+var _tsr_tmp2 = m_tsr.create();
 
 var DEVICE_GYRO = 10;
 var DEVICE_HMD = 20;
@@ -57,15 +62,17 @@ exports.DEVICE_GAMEPAD1 = DEVICE_GAMEPAD1;
 exports.DEVICE_GAMEPAD2 = DEVICE_GAMEPAD2;
 exports.DEVICE_GAMEPAD3 = DEVICE_GAMEPAD3;
 
-var HMD_WEBVR_DESKTOP = 0;
-var HMD_WEBVR_MOBILE = 1;
-var HMD_NON_WEBVR = 2;
-var HMD_WEBVR1 = 3;
+var HMD_NON_WEBVR = 1 << 0;
+var HMD_WEBVR_DESKTOP = 1 << 1;
+var HMD_WEBVR_MOBILE = 1 << 2;
+var HMD_WEBVR1 = 1 << 3;
+var HMD_WEBVR1_1 = 1 << 4;
 
 exports.HMD_WEBVR_DESKTOP = HMD_WEBVR_DESKTOP;
 exports.HMD_WEBVR_MOBILE = HMD_WEBVR_MOBILE;
 exports.HMD_NON_WEBVR = HMD_NON_WEBVR;
 exports.HMD_WEBVR1 = HMD_WEBVR1;
+exports.HMD_WEBVR1_1 = HMD_WEBVR1_1;
 
 var HMD_WEBVR_TYPE = 0;
 var HMD_ORIENTATION_QUAT = 10;
@@ -75,24 +82,26 @@ var HMD_FOV_RIGHT = 22;
 var HMD_EYE_DISTANCE = 23;
 var HMD_DISTORTION = 24;
 var HMD_BASELINE_DIST = 25;
-var HMD_SCREEN_LENSE_DIST = 26;
+var HMD_SCREEN_LENS_DIST = 26;
 var HMD_SCREEN_WIDTH = 27;
 var HMD_SCREEN_HEIGHT = 28;
 var HMD_BEVEL_SIZE = 29;
-var MOUSE_LOCATION = 30;
-var MOUSE_LOCATION_PL = 31;
-var MOUSE_DOWN_WHICH = 40;
-var MOUSE_UP_WHICH = 50;
-var MOUSE_WHEEL = 60;
-var KEYBOARD_UP = 70;
-var KEYBOARD_DOWN = 80;
-var KEYBOARD_DOWN_MODIFIED = 81;
-var TOUCH_START = 90;
-var TOUCH_MOVE = 100;
-var TOUCH_END = 110;
-var GYRO_ORIENTATION_QUAT = 120;
-var GYRO_ORIENTATION_ANGLES = 130;
-var DEVICE_ORIENTATION = 131;
+var HMD_PROJ_LEFT = 30;
+var HMD_PROJ_RIGHT = 31;
+var MOUSE_LOCATION = 40;
+var MOUSE_LOCATION_PL = 41;
+var MOUSE_DOWN_WHICH = 50;
+var MOUSE_UP_WHICH = 60;
+var MOUSE_WHEEL = 70;
+var KEYBOARD_UP = 80;
+var KEYBOARD_DOWN = 90;
+var KEYBOARD_DOWN_MODIFIED = 91;
+var TOUCH_START = 100;
+var TOUCH_MOVE = 110;
+var TOUCH_END = 120;
+var GYRO_ORIENTATION_QUAT = 130;
+var GYRO_ORIENTATION_ANGLES = 140;
+var DEVICE_ORIENTATION = 141;
 
 exports.HMD_WEBVR_TYPE = HMD_WEBVR_TYPE;
 exports.HMD_ORIENTATION_QUAT = HMD_ORIENTATION_QUAT;
@@ -102,10 +111,12 @@ exports.HMD_FOV_RIGHT = HMD_FOV_RIGHT;
 exports.HMD_EYE_DISTANCE = HMD_EYE_DISTANCE;
 exports.HMD_DISTORTION = HMD_DISTORTION;
 exports.HMD_BASELINE_DIST = HMD_BASELINE_DIST;
-exports.HMD_SCREEN_LENSE_DIST = HMD_SCREEN_LENSE_DIST;
+exports.HMD_SCREEN_LENS_DIST = HMD_SCREEN_LENS_DIST;
 exports.HMD_SCREEN_WIDTH = HMD_SCREEN_WIDTH;
 exports.HMD_SCREEN_HEIGHT = HMD_SCREEN_HEIGHT;
 exports.HMD_BEVEL_SIZE = HMD_BEVEL_SIZE;
+exports.HMD_PROJ_LEFT = HMD_PROJ_LEFT;
+exports.HMD_PROJ_RIGHT = HMD_PROJ_RIGHT;
 
 exports.MOUSE_LOCATION = MOUSE_LOCATION;
 exports.MOUSE_LOCATION_PL = MOUSE_LOCATION_PL;
@@ -148,6 +159,11 @@ exports.GMPD_BUTTON_23 = 323;
 exports.GMPD_BUTTON_24 = 324;
 exports.GMPD_BUTTON_25 = 325;
 
+exports.GMPD_TRACKPAD_BUTTON = 300;
+exports.GMPD_TRIGGER_BUTTON = 301;
+exports.GMPD_GRIPS_BUTTON = 302;
+exports.GMPD_MENU_BUTTON = 303;
+
 exports.GMPD_AXIS_0 = 326;
 exports.GMPD_AXIS_1 = 327;
 exports.GMPD_AXIS_2 = 328;
@@ -163,19 +179,13 @@ exports.GMPD_AXIS_11 = 337;
 
 var GMPD_AXIS_OFFSET = 326;
 var GMPD_BTNS_OFFSET = 300;
-var HMD_UPDATING_DELAY = 1;
 
 var _quat_tmp = m_quat.create();
 var _quat_tmp2 = m_quat.create();
 var _vec3_tmp = m_vec3.create();
 
-var _last_updating_hmd_time = -Infinity;
-// NOTE: prevent freez with calling navigator.getVRDevices
-var _is_webvr_devices_requested = false;
-
 // callbacks buffers
 var _location = new Float32Array(2);
-var _trans = m_vec3.create();
 var _angles = m_vec3.create();
 var _quat = m_quat.create();
 
@@ -211,8 +221,8 @@ exports.can_use_device = can_use_device;
 function can_use_device(type) {
     var is_mobile = m_compat.detect_mobile();
     if (type == DEVICE_HMD && !navigator.getVRDevices &&
-            !navigator.getVRDisplays && !is_mobile || type == DEVICE_GYRO &&
-            (!is_mobile || !window.DeviceOrientationEvent))
+            !navigator.getVRDisplays && !(is_mobile && check_fullscreen()) ||
+            type == DEVICE_GYRO && !(is_mobile && window.DeviceOrientationEvent))
         return false;
     else
         return true;
@@ -259,12 +269,17 @@ function init_device(type, element) {
         distortion_coefs           : new Float32Array(2),
         chromatic_aberration_coefs : new Float32Array(4),
         // WebVR properties
+        registered_cb: null,
         webvr_hmd_device: null,
         webvr_sensor_devices: null,
         // WebVR 1.0 properties
         webvr_display: null,
         orientation: m_quat.create(),
         position: m_vec3.create(),
+
+        // WebVR 1.1 properties
+        frame_data: window.VRFrameData? new VRFrameData(): null,
+        standing_tsr: m_tsr.create(),
 
         // non-WebVR HMD properties
         fov_left                   : new Float32Array(4),
@@ -287,8 +302,8 @@ function init_device(type, element) {
     };
 
     // default value
-    device.fov_left[0] = device.fov_left[1] = device.fov_left[2] = device.fov_left[3] = 45;
-    device.fov_right[0] = device.fov_right[1] = device.fov_right[2] = device.fov_right[3] = 45;
+    device.fov_left[0] = device.fov_left[1] = device.fov_left[2] = device.fov_left[3] = Math.PI/4;
+    device.fov_right[0] = device.fov_right[1] = device.fov_right[2] = device.fov_right[3] = Math.PI/4;
 
     if (type == DEVICE_MOUSE || type == DEVICE_KEYBOARD || type == DEVICE_TOUCH) {
         device.registered = Boolean(element);
@@ -297,19 +312,30 @@ function init_device(type, element) {
             document.addEventListener("touchstart", function(){});
         else if (type == DEVICE_KEYBOARD)
             device.prevent_default = false;
-    } else if (type == DEVICE_GYRO) {
+    } else if (type == DEVICE_GYRO)
         device.registered = true;
-    } else if (type == DEVICE_HMD) {
-        if (navigator.getVRDisplays) {
-            // NOTE: don't do distortion correction, it will be done by browser
-        } else if (navigator.getVRDevices && !cfg_def.is_mobile_device)
-            setup_distortion_coef(device, cfg_hmdp["webvr"]);
-        else {
-            setup_nonwebvr_hmd_device(device);
-            device.registered = true;
+    else if (type == DEVICE_HMD)
+        request_register_device(device);
+
+    return device;
+}
+
+exports.init = function() {
+    if (cfg_def.stereo == "HMD" || (cfg_def.stereo == "NONE" && cfg_def.is_mobile_device)) {
+        var device = get_device_by_type_element(DEVICE_HMD);
+        if (device) {
+            // WebVR 1.1
+            // NOTE: examples of usage onvrdisplayconnect/onvrdisplaydisconnect
+            // events are not provided by contributers of WebVR specification yet.
+            // TODO: add onvrdisplaydisconnect handler
+            // See https://w3c.github.io/webvr/#interface-vrdisplayevent
+            document.addEventListener("onvrdisplayconnect", function(event) {
+                device.webvr_display = event.display;
+                device.registered = true;
+                device.webvr_display.getFrameData(device.frame_data)
+            });
         }
     }
-    return device;
 }
 
 exports.get_device_by_type_element = get_device_by_type_element;
@@ -335,6 +361,49 @@ function get_device_by_type_element(type, element) {
     if (device)
         _devices.push(device);
     return device;
+}
+
+exports.request_register_device = request_register_device;
+function request_register_device(device) {
+    if (device.type == DEVICE_HMD) {
+        if (navigator.getVRDisplays) {
+            navigator.getVRDisplays().then(
+                function (displays) {
+                    if (displays.length > 0) {
+                        device.webvr_display = displays[0];
+                        device.registered = true;
+                        device.webvr_display.getFrameData(device.frame_data)
+
+                        if (device.registered_cb)
+                            device.registered_cb();
+                    }
+                }, function(error) {
+                    m_print.error_once("WebVR displays are not found.");
+                    device.registered = false;
+                }
+            );
+            // NOTE: don't do distortion correction, it will be done by browser
+        } else if (navigator.getVRDevices) {
+            navigator.getVRDevices().then(
+                function(webvr_devices) {
+                    setup_webvr_devices(device, webvr_devices);
+                    if (webvr_devices.length)
+                        device.registered = true;
+
+                        if (device.registered_cb)
+                            device.registered_cb();
+                }, function(error) {
+                    m_print.error_once("WebVR devices are not found.");
+                    device.registered = false;
+                }
+            );
+
+            setup_distortion_coef(device, cfg_hmdp["webvr"]);
+        } else {
+            setup_nonwebvr_hmd_device(device);
+            device.registered = true;
+        }
+    }
 }
 
 function set_gamepad_mapping(device) {
@@ -396,30 +465,23 @@ function get_distort_fact_radius(distortion_coefs, radius) {
 }
 
 function update_nonwebvr_fov(device) {
-    var bottom_dist = device.base_line_dist - device.bevel_size;
-    var top_dist    = device.height_dist - bottom_dist;
     var inner_dist  = device.inter_lens_dist / 2;
-    var outer_dist  = (device.width_dist - device.inter_lens_dist) / 2;
-    var distor_coef = device.distortion_coefs;
-
-    var bottom_tang = bottom_dist / device.screen_to_lens_dist;
-    var bottom_angle = m_util.rad_to_deg(Math.atan(bottom_tang));
-    var top_tang = top_dist / device.screen_to_lens_dist;
-    var top_angle = m_util.rad_to_deg(Math.atan(top_tang));
+ 
     var inner_tang = inner_dist / device.screen_to_lens_dist;
-    var inner_angle = m_util.rad_to_deg(Math.atan(inner_tang));
-    var outer_tang = outer_dist / device.screen_to_lens_dist;
-    var outer_angle = m_util.rad_to_deg(Math.atan(outer_tang));
+    var inner_angle = Math.atan(inner_tang * cfg_hmdp["nonwebvr"].distor_scale);
+    var outer_angle = inner_angle;
+    var bottom_angle = inner_angle;
+    var top_angle = inner_angle;
 
-    // NOTE: 60...I don't know why
+    // NOTE: PI/3...I don't know why
     if (top_angle)
-        device.fov_left[0] = device.fov_right[0] = Math.min(top_angle, 60);
+        device.fov_left[0] = device.fov_right[0] = Math.min(top_angle, Math.PI/3);
     if (inner_angle)
-        device.fov_left[1] = device.fov_right[3] = Math.min(inner_angle, 60);
+        device.fov_left[1] = device.fov_right[3] = Math.min(inner_angle, Math.PI/3);
     if (bottom_angle)
-        device.fov_left[2] = device.fov_right[2] = Math.min(bottom_angle, 60);
+        device.fov_left[2] = device.fov_right[2] = Math.min(bottom_angle, Math.PI/3);
     if (outer_angle)
-        device.fov_left[3] = device.fov_right[1] = Math.min(outer_angle, 60);
+        device.fov_left[3] = device.fov_right[1] = Math.min(outer_angle, Math.PI/3);
 }
 
 function setup_webvr_devices(device, webvr_devices) {
@@ -468,36 +530,42 @@ function reset_device(device) {
 function get_fov(device, eye, dest) {
     switch (device.type) {
     case DEVICE_HMD:
-        var webvr_display = device.webvr_display || device.webvr_hmd_device;
-        if (webvr_display) {
-            var param = webvr_display.getEyeParameters(eye);
-            var fov = param.fieldOfView || param.currentFieldOfView
-            var distor_coef = device.distortion_coefs;
-            var bottom_tang = get_distort_fact_radius(distor_coef,
-                    Math.tan(m_util.deg_to_rad(fov["downDegrees"])));
-            var bottom_angle = m_util.rad_to_deg(Math.atan(bottom_tang));
-            var top_tang = get_distort_fact_radius(distor_coef,
-                    Math.tan(m_util.deg_to_rad(fov["upDegrees"])));
-            var top_angle = m_util.rad_to_deg(Math.atan(top_tang));
-            var left_tang = get_distort_fact_radius(distor_coef,
-                    Math.tan(m_util.deg_to_rad(fov["leftDegrees"])));
-            var left_angle = m_util.rad_to_deg(Math.atan(left_tang));
-            var right_tang = get_distort_fact_radius(distor_coef,
-                    Math.tan(m_util.deg_to_rad(fov["rightDegrees"])));
-            var right_angle = m_util.rad_to_deg(Math.atan(right_tang));
-
-            // TODO: check Oculus FOV
-            dest[0] = fov["upDegrees"];
-            dest[1] = fov["rightDegrees"];
-            dest[2] = fov["downDegrees"];
-            dest[3] = fov["leftDegrees"];
-        } else {
+        var type = get_value_param(device, HMD_WEBVR_TYPE);
+        if (type & HMD_NON_WEBVR) {
             if (eye == "left")
                 var fov = device.fov_left;
             else
                 var fov = device.fov_right;
 
             m_vec4.copy(fov, dest);
+        } else {
+            var webvr_display = device.webvr_display || device.webvr_hmd_device;
+            if (webvr_display)
+                // TODO: uncomment until fieldOfView is not in WebVR 1.*
+                // if (type & HMD_WEBVR1_1) {
+                //     var proj_mat = _mat4_tmp;
+                //     if (eye == "left")
+                //         m_mat4.copy(device.frame_data.leftProjectionMatrix, proj_mat);
+                //     else
+                //         m_mat4.copy(device.frame_data.rightProjectionMatrix, proj_mat);
+                //     var inv_proj_mat = m_mat4.invert(proj_mat, proj_mat);
+                //     var right_top_near = m_vec3.transformMat4([1, 1, -1], inv_proj_mat, _vec3_tmp);
+                //
+                //     dest[0] = Math.atan(- _vec3_tmp[1] / _vec3_tmp[2]);
+                //     dest[1] = Math.atan(- _vec3_tmp[0] / _vec3_tmp[2]);
+                //     var left_down_near = m_vec3.transformMat4([-1, -1, -1], inv_proj_mat, _vec3_tmp);
+                //     dest[2] = Math.atan(_vec3_tmp[1] / _vec3_tmp[2]);
+                //     dest[3] = Math.atan(_vec3_tmp[0] / _vec3_tmp[2]);
+                //     console.log(dest)
+                // }
+
+                var param = webvr_display.getEyeParameters(eye);
+                var fov = param.fieldOfView || param.currentFieldOfView
+                // TODO: check Oculus FOV
+                dest[0] = m_util.deg_to_rad(fov["upDegrees"]);
+                dest[1] = m_util.deg_to_rad(fov["rightDegrees"]);
+                dest[2] = m_util.deg_to_rad(fov["downDegrees"]);
+                dest[3] = m_util.deg_to_rad(fov["leftDegrees"]);
         }
         break;
     default:
@@ -505,6 +573,26 @@ function get_fov(device, eye, dest) {
         break;
     }
 
+    return dest;
+}
+
+function get_proj(device, eye, dest) {
+    switch (device.type) {
+    case DEVICE_HMD:
+        var webvr_display = device.webvr_display;
+        if (webvr_display) {
+            if (eye == "left")
+                m_mat4.copy(device.frame_data.leftProjectionMatrix, dest);
+            else if (eye == "right")
+                m_mat4.copy(device.frame_data.rightProjectionMatrix, dest);
+            else
+                m_print.error("Unknown type of eye: ", eye);
+        }
+        break;
+    default:
+        m_print.error("Projection matrix is undefined for device: ", device.type);
+        break;
+    }
     return dest;
 }
 
@@ -525,6 +613,10 @@ exports.get_vector_param = function(device, param, dest) {
         return get_fov(device, "left", dest);
     case HMD_FOV_RIGHT:
         return get_fov(device, "right", dest);
+    case HMD_PROJ_LEFT:
+        return get_proj(device, "left", dest);
+    case HMD_PROJ_RIGHT:
+        return get_proj(device, "right", dest);
     case MOUSE_LOCATION:
     case MOUSE_LOCATION_PL:
         dest[0] = device.mouse_location[0];
@@ -537,21 +629,27 @@ exports.get_value_param = get_value_param;
 function get_value_param(device, param) {
     switch(param) {
     case HMD_WEBVR_TYPE:
-        if (navigator.getVRDisplays)
-            return HMD_WEBVR1;
-        else if (navigator.getVRDevices)
+        var type = 0;
+        if (navigator.getVRDisplays) {
+            type |= HMD_WEBVR1;
+            if (device.frame_data)
+                type |= HMD_WEBVR1_1;
+        }
+        if (navigator.getVRDevices) {
             if (cfg_def.is_mobile_device)
-                return HMD_WEBVR_MOBILE;
+                type |= HMD_WEBVR_MOBILE;
             else
-                return HMD_WEBVR_DESKTOP;
-        return HMD_NON_WEBVR;
+                type |= HMD_WEBVR_DESKTOP;
+        }
+        type = type || HMD_NON_WEBVR;
+        return type;
     case HMD_EYE_DISTANCE:
         var webvr_display = device.webvr_display || device.webvr_hmd_device;
         if (webvr_display) {
             var param_left = webvr_display.getEyeParameters("left");
             var param_right = webvr_display.getEyeParameters("right");
             if (device.webvr_display) {
-                // NOTE: using WebVR 1.0
+                // NOTE: using WebVR 1.*
                 return param_right["offset"][0] - param_left["offset"][0];
             } else {
                 // NOTE: using WebVR
@@ -565,7 +663,7 @@ function get_value_param(device, param) {
 exports.set_config = function(device, config, value) {
     switch(device.type) {
     case DEVICE_HMD:
-        if (get_value_param(device, HMD_WEBVR_TYPE) === HMD_WEBVR1)
+        if (get_value_param(device, HMD_WEBVR_TYPE) & HMD_WEBVR1)
             break;
         switch(config) {
         case HMD_DISTORTION:
@@ -580,7 +678,7 @@ exports.set_config = function(device, config, value) {
             device.base_line_dist = value;
             update_nonwebvr_fov(device);
             break;
-        case HMD_SCREEN_LENSE_DIST:
+        case HMD_SCREEN_LENS_DIST:
             device.screen_to_lens_dist = value;
             update_nonwebvr_fov(device);
             break;
@@ -625,6 +723,16 @@ exports.get_gamepad_axis_value = function(device, btn) {
         return 0;
 }
 
+exports.get_gamepad_position = function(device, dest) {
+    dest.set(device.position);
+    return dest;
+}
+
+exports.get_gamepad_orientation = function(device, dest) {
+    dest.set(device.orientation);
+    return dest;
+}
+
 exports.update = function(timeline) {
     var gamepads = navigator.getGamepads ? navigator.getGamepads() :
             (navigator.webkitGetGamepads ? navigator.webkitGetGamepads : []);
@@ -660,63 +768,68 @@ function update_hmd(device, timeline) {
         // to prevent strange behavior of WebVR API 1.0
         var display = device.webvr_display;
         var capabilities = display.capabilities;
-        var webvr_pose = display.getPose();
 
-        if (capabilities.hasOrientation && webvr_pose.orientation) {
-            device.orientation[0] = webvr_pose.orientation[0];
-            device.orientation[1] = webvr_pose.orientation[1];
-            device.orientation[2] = webvr_pose.orientation[2];
-            device.orientation[3] = webvr_pose.orientation[3];
-        }
+        if (device.frame_data && display.getFrameData(device.frame_data)) {
+            var webvr_pose = device.frame_data.pose;
 
-        if (capabilities.hasPosition && webvr_pose.position) {
-            device.position[0] = webvr_pose.position[0];
-            device.position[1] = -webvr_pose.position[2];
-            device.position[2] = webvr_pose.position[1];
-        }
-    } else {
-        if (timeline - _last_updating_hmd_time > HMD_UPDATING_DELAY) {
-            _last_updating_hmd_time = timeline;
-            if (navigator.getVRDisplays) {
-                if (!device.webvr_display)
-                    navigator.getVRDisplays().then(
-                        function (displays) {
-                            if (displays.length > 0) {
-                                device.webvr_display = displays[0];
-                                device.registered = true;
-                            }
-                        }, function(error) {
-                            m_print.error_once("WebVR displays are not found.");
-                            device.registered = false;
-                        }
-                    );
-            } else if (navigator.getVRDevices) {
-                if (!device.webvr_hmd_device && !_is_webvr_devices_requested)
-                    navigator.getVRDevices().then(
-                        function(webvr_devices) {
-                            setup_webvr_devices(device, webvr_devices);
-                            if (webvr_devices.length)
-                                device.registered = true;
-                            _is_webvr_devices_requested = true;
-                        }, function(error) {
-                            m_print.error_once("WebVR devices are not found.");
-                            device.registered = false;
-                            _is_webvr_devices_requested = true;
-                        }
-                    );
-            } else if (!cfg_def.is_mobile_device)
-                m_print.error_once("HMD isn't supported.");
+            // NOTE: we just take offset between eyes
+            var l_trans = m_util.matrix_to_trans(device.frame_data.leftViewMatrix, _vec3_tmp);
+            device.inter_lens_dist = 2 * m_vec3.length(l_trans);
+        } else
+            var webvr_pose = display.getPose();
+
+        if (webvr_pose) {
+            var rot_X_quat = m_quat.setAxisAngle(m_util.AXIS_X, Math.PI / 2, _quat_tmp);
+
+            if (display["stageParameters"] &&
+                    display["stageParameters"]["sittingToStandingTransform"]) {
+                var standing_tsr = m_tsr.from_mat4(
+                        display["stageParameters"]["sittingToStandingTransform"],
+                        _tsr_tmp);
+
+                m_tsr.identity(_tsr_tmp2);
+                var rot_X_tsr = m_tsr.set_quat(rot_X_quat, _tsr_tmp2);
+
+                standing_tsr = m_tsr.multiply(rot_X_tsr, standing_tsr, device.standing_tsr);
+            } else {
+                m_tsr.identity(_tsr_tmp);
+                var standing_tsr = m_tsr.set_quat(rot_X_quat, device.standing_tsr);
+            }
+
+            if (capabilities.hasOrientation && webvr_pose.orientation)
+                m_tsr.transform_quat(webvr_pose.orientation, standing_tsr,
+                        device.orientation);
+
+            if (capabilities.hasPosition && webvr_pose.position)
+                m_tsr.transform_vec3(webvr_pose.position, standing_tsr,
+                        device.position);
         }
     }
 }
 
 function update_gamepad_device(gamepad, device) {
     if (gamepad) {
-        for (var i = 0; i < gamepad["buttons"].length; i++)
-            device.gamepad_btns[i] = gamepad["buttons"][i]["value"];
+        for (var i = 0; i < gamepad["buttons"].length; i++) {
+            device.gamepad_btns[i] = gamepad["buttons"][i]["value"] ||
+                    +gamepad["buttons"][i]["pressed"];
+        }
+
         if (gamepad["axes"])
             for (var i = 0; i < gamepad["axes"].length; i++)
                 device.gamepad_axes[i] = gamepad["axes"][i];
+
+        var pose = gamepad["pose"];
+        if (pose) {
+            var hmd_device = get_device_by_type_element(DEVICE_HMD);
+            var standing_tsr = hmd_device.standing_tsr;
+            if (pose["position"])
+                m_tsr.transform_vec3(pose["position"], standing_tsr,
+                        device.position);
+
+            if (pose["orientation"])
+                m_tsr.transform_quat(pose["orientation"], standing_tsr,
+                        device.orientation);
+        }
     }
 }
 
@@ -727,6 +840,9 @@ function clear_gamepad_device(device) {
         device.gamepad_prev_axes[i] = device.gamepad_axes[i];
         device.gamepad_axes[i] = 0;
     }
+
+    device.position.set(m_util.VEC3_IDENT);
+    device.orientation.set(m_util.QUAT4_IDENT);
 }
 
 exports.attach_param_cb = function(device, param, cb) {
@@ -791,7 +907,7 @@ function is_null(x) {
 }
 
 exports.detach_param_cb = function(device, param, cb) {
-    unregister_event_listener(device, param, cb, false, false);
+    unregister_event_listener(device, param, cb, false);
 }
 
 
@@ -1024,10 +1140,7 @@ function get_orientation_quat(device, dest) {
                 }
             }
         }
-        // NOTE: normalize dest, bcz firefox doesn't do this
-        m_quat.normalize(dest, dest);
-        var quat = m_quat.setAxisAngle(m_util.AXIS_X, Math.PI / 2, _quat_tmp2);
-        m_quat.multiply(quat, dest, dest);
+
         return dest;
     default:
         m_print.error("orientation_quat is undefined for device: ", device.type);
@@ -1238,8 +1351,12 @@ function mouse_down_cb(event) {
             cb(event.which);
     }
 
-    if (device.prevent_default)
+    if (device.prevent_default) {
+        // need to set focus for keyboard events if the engine works inside an iframe
+        if (window.frameElement)
+            window.frameElement.focus();
         event.preventDefault();
+    }
 
     // remove unused callbacks
     for (var i = 0; i < device.mouse_down_which_cb_list.length; i++)
@@ -1491,6 +1608,33 @@ exports.activate_pointerlock = function(sensor) {
             enable_pointerlock(sensor);
     }
     elem.addEventListener("mousedown", request_pointer_lock, false);
+}
+
+exports.add_click_listener = function(element, callback) {
+    if (cfg_def.is_mobile_device)
+        element.addEventListener("touchend", callback);
+    else
+        element.addEventListener("mouseup", callback);
+}
+
+exports.remove_click_listener = function(element, callback) {
+    if (cfg_def.is_mobile_device)
+        element.removeEventListener("touchend", callback);
+    else
+        element.removeEventListener("mouseup", callback);
+}
+
+exports.check_fullscreen = check_fullscreen;
+function check_fullscreen() {
+    var fullscreenEnabled = window.document.fullscreenEnabled ||
+                            window.document.mozFullScreenEnabled ||
+                            window.document.msFullscreenEnabled ||
+                            window.document.webkitFullscreenEnabled;
+
+    if (fullscreenEnabled)
+        return true;
+
+    return false;
 }
 
 }

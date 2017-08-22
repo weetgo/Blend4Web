@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ var m_ctl    = require("controls");
 var m_input  = require("input");
 var m_quat   = require("quat");
 var m_scenes = require("scenes");
+var m_screen = require("screen");
 var m_trans  = require("transform");
 var m_util   = require("util");
 var m_vec3   = require("vec3");
@@ -49,14 +50,16 @@ var _quat_tmp3 = m_quat.create();
 var _quat_tmp4 = m_quat.create();
 
 var _offset_quat = m_quat.create();
+var _offset_pos = m_vec3.create();
+var _empty_params = {pivot: m_vec3.create()};
+
 /**
  * HMD behavior enum.
  * @see {@link module:hmd.HMD_NONE_MOUSE_ALL_AXES},
  * {@link module:hmd.HMD_ALL_AXES_MOUSE_NONE},
  * {@link module:hmd.HMD_ROLL_PITCH_MOUSE_YAW},
  * {@link module:hmd.HMD_ALL_AXES_MOUSE_YAW}
- * @typedef HMDBehavior
- * @type {Number}
+ * @typedef {number} HMDBehavior
  */
 
 /**
@@ -76,7 +79,7 @@ var HMD_ALL_AXES_MOUSE_NONE = 1;
 exports.HMD_ALL_AXES_MOUSE_NONE = HMD_ALL_AXES_MOUSE_NONE;
 
 /**
- * HMD behavior: HMD controls roll and ritch rotation,
+ * HMD behavior: HMD controls roll and pitch rotation,
  * mouse controls yaw rotation.
  * @const {HMDBehavior} module:hmd.HMD_ROLL_PITCH_MOUSE_YAW
  */
@@ -100,13 +103,12 @@ exports.enable_hmd = function(control_type) {
     var sensor = null;
     var device = m_input.get_device_by_type_element(m_input.DEVICE_HMD);
     if (device) {
-        if (m_input.get_value_param(device, m_input.HMD_WEBVR_TYPE) ==
-                m_input.HMD_WEBVR_DESKTOP
-                || m_input.get_value_param(device, m_input.HMD_WEBVR_TYPE) ==
-                        m_input.HMD_WEBVR1)
+        if (m_input.get_value_param(device, m_input.HMD_WEBVR_TYPE) &
+                (m_input.HMD_WEBVR_MOBILE | m_input.HMD_WEBVR_DESKTOP | m_input.HMD_WEBVR1))
+            // use state of the WebVR device
             sensor = m_ctl.create_hmd_quat_sensor();
         else
-            // m_input.HMD_WEBVR_TYPE in {m_input.HMD_NON_WEBVR, m_input.HMD_WEBVR_MOBILE}
+            // use gyroscope state
             sensor = m_ctl.create_gyro_quat_sensor();
         process_hmd(control_type, sensor);
     }
@@ -115,30 +117,75 @@ exports.enable_hmd = function(control_type) {
 /**
  * Check if the browser supports WebVR API or it is a mobile version of the browser.
  * @method module:hmd.check_browser_support
- * @return {Boolean} Checking result.
+ * @return {boolean} Checking result.
  */
 exports.check_browser_support = function() {
     return Boolean(m_input.can_use_device(m_input.DEVICE_HMD));
 }
 
 /**
- * Get mounted hmd device.
- * @method module:hmd.get_hmd_device
- * @return {HMDVRDevice} HMD object.
- * @deprecated
+ * Enable VR controllers.
+ * @method module:hmd.enable_controllers
+ * @param {Object3D} [gamepad_1] Object presenting controller.
+ * @param {Object3D} [gamepad_2] Object presenting controller.
+ * @example
+ * var m_hmd = require("hmd");
+ * var m_scenes = require("scenes");
+ *
+ * var gamepad_1 = m_scenes.get_object_by_name("my_gamepad_1");
+ * var gamepad_2 = m_scenes.get_object_by_name("my_gamepad_2");
+ * m_hmd.enable_controllers(gamepad_1, gamepad_2);
  */
-exports.get_hmd_device = function() {
-    return null;
+exports.enable_controllers = function(gamepad_1, gamepad_2) {
+    // TODO: add default models for gamepad_1, gamepad_2
+    disable_controllers();
+
+    if (!gamepad_1 && !gamepad_2)
+        return;
+
+    var gamepad_id = m_input.get_vr_controller_id(0);
+    var gm_pos_sensor = m_ctl.create_gamepad_position_sensor(gamepad_id);
+    var gm_ori_sensor = m_ctl.create_gamepad_orientation_sensor(gamepad_id);
+
+    var gamepad_id2 = m_input.get_vr_controller_id(1);
+    var gm_pos_sensor2 = m_ctl.create_gamepad_position_sensor(gamepad_id2);
+    var gm_ori_sensor2 = m_ctl.create_gamepad_orientation_sensor(gamepad_id2);
+
+    function position_cb(obj, id, pulse) {
+        if (gamepad_1) {
+            var gmpos1 = m_ctl.get_sensor_payload(obj, id, 0);
+            var gmori1 = m_ctl.get_sensor_payload(obj, id, 2);
+
+            m_vec3.add(_offset_pos, gmpos1, gmpos1);
+            m_trans.set_translation_v(gamepad_1, gmpos1);
+            m_trans.set_rotation_v(gamepad_1, gmori1);
+        }
+
+        if (gamepad_2) {
+            var gmpos2 = m_ctl.get_sensor_payload(obj, id, 1);
+            var gmori2 = m_ctl.get_sensor_payload(obj, id, 3);
+
+            m_vec3.add(_offset_pos, gmpos2, gmpos2);
+            m_trans.set_translation_v(gamepad_2, gmpos2);
+            m_trans.set_rotation_v(gamepad_2, gmori2);
+        }
+    }
+    m_ctl.create_sensor_manifold(null, "VR_CONTROLLERS", m_ctl.CT_CONTINUOUS,
+            [gm_pos_sensor, gm_pos_sensor2, gm_ori_sensor, gm_ori_sensor2],
+            null, position_cb);
 }
 
 /**
- * Reset the sensors, return position and orientation sensors values to zero.
- * @method module:hmd.reset
- * @deprecated Use {@link module:input.reset_device} instead
+ * Disable VR controllers.
+ * @method module:hmd.disable_controllers
+ * @example
+ * var m_hmd = require("hmd");
+ *
+ * m_hmd.disable_controllers();
  */
-exports.reset = function() {
-    var device = m_input.get_device_by_type_element(m_input.DEVICE_HMD);
-    m_input.reset_device(device);
+exports.disable_controllers = disable_controllers;
+function disable_controllers() {
+    m_ctl.remove_sensor_manifold(null, "VR_CONTROLLERS");
 }
 
 function process_hmd(control_type, sensor) {
@@ -148,7 +195,8 @@ function process_hmd(control_type, sensor) {
     var cam_obj = m_scenes.get_active_camera();
     if (!cam_obj)
         return;
-    else
+
+    m_screen.request_split_screen(function() {
         if (!m_cam.is_eye_camera(cam_obj)) {
             _was_target_camera = m_cam.is_target_camera(cam_obj);
             _was_hover_camera = m_cam.is_hover_camera(cam_obj);
@@ -157,25 +205,29 @@ function process_hmd(control_type, sensor) {
             m_cam.eye_setup(cam_obj);
         }
 
-    var elapsed = m_ctl.create_elapsed_sensor();
+        var elapsed = m_ctl.create_elapsed_sensor();
+        var pos_sensor = m_ctl.create_hmd_position_sensor();
 
-    var updated_eye_data = false;
-    var move_cam_cb = function(obj, id, pulse) {
+        _last_cam_quat = m_trans.get_rotation(cam_obj, _last_cam_quat);
+        m_ctl.create_sensor_manifold(null, "HMD_ROTATE_CAMERA", m_ctl.CT_CONTINUOUS,
+                [elapsed, sensor, pos_sensor], null, move_cam_cb);
+    });
+
+    function move_cam_cb(obj, id, pulse) {
         if (pulse > 0) {
             var cam_obj = m_scenes.get_active_camera();
             if (!cam_obj)
                 return;
 
-            // NOTE: init part
-            if (!updated_eye_data && m_input.enable_split_screen(cam_obj)) {
-                _last_cam_quat = m_trans.get_rotation(cam_obj, _last_cam_quat);
-                updated_eye_data = true;
-            }
-
             // NOTE: It is executed every frame.
             // uses _vec3_tmp, _vec3_tmp2, _vec3_tmp3, _quat_tmp, _quat_tmp2
-            if (updated_eye_data && m_cam.is_eye_camera(cam_obj)) {
+            if (m_cam.is_eye_camera(cam_obj)) {
                 var hmd_quat = m_ctl.get_sensor_payload(obj, id, 1);
+                var hmd_pos = m_ctl.get_sensor_payload(obj, id, 2);
+
+                var position = m_vec3.add(hmd_pos, _offset_pos, _vec3_tmp);
+                m_trans.set_translation_v(cam_obj, position);
+
                 if (hmd_quat) {
                     if (control_type == HMD_ALL_AXES_MOUSE_NONE) {
                         hmd_quat = m_quat.multiply(_offset_quat, hmd_quat, _quat_tmp4);
@@ -248,8 +300,6 @@ function process_hmd(control_type, sensor) {
             }
         }
     }
-    m_ctl.create_sensor_manifold(null, "HMD_ROTATE_CAMERA", m_ctl.CT_CONTINUOUS,
-            [elapsed, sensor], null, move_cam_cb);
 }
 
 /**
@@ -257,17 +307,21 @@ function process_hmd(control_type, sensor) {
  * @method module:hmd.disable_hmd
  */
 exports.disable_hmd = function() {
+    if (!m_ctl.check_sensor_manifold(null, "HMD_ROTATE_CAMERA"))
+        return;
+
     m_ctl.remove_sensor_manifold(null, "HMD_ROTATE_CAMERA");
 
-    m_input.disable_split_screen();
+    m_screen.exit_split_screen();
 
     var cam_obj = m_scenes.get_active_camera();
+    // TODO: add restoring camera's params
     if (_was_target_camera)
-        m_cam.target_setup(cam_obj);
+        m_cam.target_setup(cam_obj, _empty_params);
     else if (_was_hover_camera)
-        m_cam.hover_setup(cam_obj);
+        m_cam.hover_setup(cam_obj, _empty_params);
     else if (_was_static_camera)
-        m_cam.static_setup(cam_obj);
+        m_cam.static_setup(cam_obj, _empty_params);
 
     // correct up camera (non-vr mode)
     m_cam.set_vertical_axis(cam_obj, m_util.AXIS_Z);
@@ -279,6 +333,10 @@ exports.disable_hmd = function() {
  * Set hmd initial rotation quat.
  * @method module:hmd.set_rotate_quat
  * @param {Quat} quat Initial rotation quaternion.
+ * @example
+ * var m_hmd = require("hmd");
+ *
+ * m_hmd.set_rotate_quat([0,0,0,1]);
  */
 exports.set_rotate_quat = function(quat) {
     m_quat.copy(quat, _offset_quat);
@@ -288,9 +346,43 @@ exports.set_rotate_quat = function(quat) {
  * @method module:hmd.get_rotate_quat
  * @param {Quat} dest Initial rotation quaternion.
  * @return {Quat} dest.
+ * @example
+ * var m_hmd = require("hmd");
+ * var m_quat = require("quat");
+ * var _quat_tmp = m_quat.create();
+ *
+ * var quat = m_hmd.get_rotate_quat(_quat_tmp);
  */
 exports.get_rotate_quat = function(dest) {
     m_quat.copy(_offset_quat, dest);
+    return dest;
+}
+/**
+ * Set hmd initial position.
+ * @method module:hmd.set_position
+ * @param {Vec3} position Initial position.
+ * @example
+ * var m_hmd = require("hmd");
+ *
+ * m_hmd.set_position([0,0,0]);
+ */
+exports.set_position = function(position) {
+    m_quat.copy(position, _offset_pos);
+}
+/**
+ * Get hmd initial position.
+ * @method module:hmd.get_position
+ * @param {Vec3} dest Initial position.
+ * @return {Vec3} dest.
+ * @example
+ * var m_hmd = require("hmd");
+ * var m_vec3 = require("vec3");
+ * var _vec3_tmp = m_vec3.create();
+ *
+ * var pos = m_hmd.get_position(_vec3_tmp);
+ */
+exports.get_position = function(dest) {
+    m_quat.copy(_offset_pos, dest);
     return dest;
 }
 

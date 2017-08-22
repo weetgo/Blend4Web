@@ -60,7 +60,7 @@ const mat3 u_model_tsr = mat3(0.0, 0.0, 0.0,
                               0.0, 0.0, 0.0, 1.0,
                               0.0);
 #else
-uniform mat3 u_model_tsr;
+uniform PRECISION mat3 u_model_tsr;
 #endif
 
 uniform mat3 u_view_tsr;
@@ -115,7 +115,7 @@ uniform vec3 u_texture_scale;
                                 SHADER INTERFACE
 ==============================================================================*/
 GLSL_IN vec3 a_position;
-GLSL_IN vec4 a_tbn_quat;
+GLSL_IN vec4 a_tbn;
 
 #if NODES && ALPHA
 # if USE_TBN_SHADING
@@ -154,7 +154,7 @@ GLSL_IN vec3 a_position_next;
 # if NODES && ALPHA
 #  if USE_NODE_MATERIAL_BEGIN || USE_NODE_GEOMETRY_NO || USE_NODE_NORMAL_MAP \
         || CAUSTICS || CALC_TBN_SPACE
-GLSL_IN vec4 a_tbn_quat_next;
+GLSL_IN vec4 a_tbn_next;
 #  endif
 # endif
 #endif
@@ -214,10 +214,15 @@ void main(void) {
         || USE_NODE_GEOMETRY_NO || CAUSTICS || WIND_BEND && MAIN_BEND_COL && DETAIL_BEND) \
         || USE_TBN_SHADING && CALC_TBN || USE_NODE_BSDF_BEGIN || USE_NODE_FRESNEL \
         || USE_NODE_TEX_COORD_NO || USE_NODE_LAYER_WEIGHT || USE_NODE_BUMP
-    vec3 normal = qrot(a_tbn_quat, vec3(0.0, 1.0, 0.0));
+    float correct_angle, handedness;
+    vec4 tbn_quat = get_tbn_quat(a_tbn, correct_angle, handedness);
+    vec3 normal = qrot(tbn_quat, vec3(0.0, 1.0, 0.0));
 # if CALC_TBN_SPACE
-    vec3 tangent = qrot(a_tbn_quat, vec3(1.0, 0.0, 0.0));
-    vec3 binormal = sign(a_tbn_quat[3]) * cross(normal, tangent);
+    vec3 tangent = qrot(tbn_quat, vec3(1.0, 0.0, 0.0));
+    vec3 binormal = handedness * cross(normal, tangent);
+
+    vec4 tanget_rot_quat = qsetAxisAngle(binormal, handedness * correct_angle);
+    tangent = qrot(tanget_rot_quat, normal);
 # else
     vec3 tangent = vec3(0.0);
     vec3 binormal = vec3(0.0);
@@ -247,12 +252,20 @@ void main(void) {
 # if NODES && ALPHA
 #  if USE_NODE_MATERIAL_BEGIN || USE_NODE_GEOMETRY_NO || USE_NODE_NORMAL_MAP \
         || CAUSTICS || CALC_TBN_SPACE
-    vec3 normal_next = qrot(a_tbn_quat_next, vec3(0.0, 1.0, 0.0));
+    float correct_angle_next, handedness_next;
+    vec4 tbn_quat_next = get_tbn_quat(a_tbn_next, correct_angle_next, handedness_next);
+    vec3 normal_next = qrot(tbn_quat_next, vec3(0.0, 1.0, 0.0));
+
     normal = mix(normal, normal_next, VERTEX_ANIM_MIX_NORMALS_FACTOR);
 #  endif
 #  if CALC_TBN_SPACE
-    vec3 tangent_next = qrot(a_tbn_quat_next, vec3(1.0, 0.0, 0.0));
-    vec3 binormal_next = sign(a_tbn_quat_next[3]) * cross(normal_next, tangent_next);
+    vec3 tangent_next = qrot(tbn_quat_next, vec3(1.0, 0.0, 0.0));
+    vec3 binormal_next = handedness_next * cross(normal_next, tangent_next);
+
+    vec4 tangent_rot_quat_next = qsetAxisAngle(binormal_next, \
+            handedness_next * correct_angle_next);
+    tangent_next = qrot(tangent_rot_quat_next, normal_next);
+
     tangent = mix(tangent, tangent_next, u_va_frame_factor);
     binormal = mix(binormal, binormal_next, u_va_frame_factor);
 #  endif
@@ -283,12 +296,12 @@ void main(void) {
     model_tsr = bend_jitter_rotate_tsr(u_wind, u_time,
             u_jitter_amp, u_jitter_freq, wcen, model_tsr);
 # endif
-    vertex world = to_world(position - center, center, vec3(0.0), shade_tangent,
-            vec3(0.0), vec3(0.0), model_tsr);
+    vertex world = to_world(position - center, center, tangent, shade_tangent,
+            binormal, normal, model_tsr);
     world.center = wcen;
 #else
-    vertex world = to_world(position, center, vec3(0.0), shade_tangent, vec3(0.0),
-            vec3(0.0), model_tsr);
+    vertex world = to_world(position, center, tangent, shade_tangent, binormal,
+            normal, model_tsr);
 #endif
 
 #if WIND_BEND
@@ -296,7 +309,7 @@ void main(void) {
     bend_vertex(world.position, world.center, normal, mat4(0.0));
 # else
 #  if MAIN_BEND_COL && DETAIL_BEND
-    vec3 bend_normal = qrot(a_tbn_quat, vec3(0.0, 1.0, 0.0));
+    vec3 bend_normal = qrot(a_tbn, vec3(0.0, 1.0, 0.0));
 #  else
     vec3 bend_normal = vec3(0.0);
 #  endif

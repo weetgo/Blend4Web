@@ -15,11 +15,8 @@ var m_vec3      = require("vec3");
 var m_cont      = require("container");
 var m_controls  = require("controls");
 var m_trans     = require("transform");
-var m_utils     = require("util");
 var m_sfx       = require("sfx");
 var m_mouse     = require("mouse");
-var m_lights    = require("lights");
-var m_preloader = require("preloader");
 var mc_lang     = require("new_year_language");
 var m_cfg       = require("config");
 
@@ -48,7 +45,6 @@ var _trigger_confetti_box = false;
 var _trigger_monkey_box = false;
 var _trigger_bear = false;
 var _video_started = false;
-var _lamp_params;
 
 var _disable_interaction = false;
 
@@ -134,7 +130,7 @@ function fix_yandex_share_href() {
 
 function load_cb(data_id) {
     if (window.Ya) {
-        var ya_share = new Ya.share({
+        new Ya.share({
             element: 'yandex_icons',
             elementStyle: {
                 "type": "none",
@@ -161,7 +157,7 @@ function load_cb(data_id) {
     }
     var mail_button = document.getElementById("mail_to");
     mail_button.onclick = function(){
-        this.href = onclick="mailto:yourfriends?subject=" +
+        this.href = "mailto:yourfriends?subject=" +
             mc_lang.get_translation("title") + "&body=" +
             window.location.href.replace('&', '%26');
     }
@@ -451,12 +447,10 @@ function on_resize() {
 }
 
 function prepare_text(message, context) {
-
     var letters = message.split("");
 
     var row = "";
     var word = "";
-    var counter = 0;
     var text = [];
 
     for (var i = 0; i < letters.length; i++) {
@@ -619,7 +613,6 @@ function play_bear_anim() {
 }
 
 function tv_play() {
-    var lamp = m_scenes.get_object_by_name("lamp");
     var speaker = m_scenes.get_object_by_dupli_name("TV", "speaker");
 
     if (_video_started) {
@@ -729,7 +722,7 @@ function create_sensors() {
             var delta_horisontal_angle = (_default_cam_angles[0] - _current_cam_angles[0]) * (elapsed/LETTER_ANIM_TIME);
             var delta_vertical_angle = (_default_cam_angles[1] - _current_cam_angles[1]) * (elapsed/LETTER_ANIM_TIME);
             m_trans.move_local(cam_obj, 0, 0, delta_distance);
-            m_cam.target_rotate(cam_obj, delta_horisontal_angle, delta_vertical_angle);
+            m_cam.rotate_camera(cam_obj, delta_horisontal_angle, delta_vertical_angle);
         } else
             m_cam.target_set_trans_pivot(cam_obj, _default_cam_eye, null);
     }

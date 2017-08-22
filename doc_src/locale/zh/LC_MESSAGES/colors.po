@@ -7,16 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Blend4Web 16.08\n"
 "Report-Msgid-Bugs-To: https://www.blend4web.com/en/forums/forum/17/\n"
-"POT-Creation-Date: 2016-09-01 16:56+0300\n"
-"PO-Revision-Date: 2016-10-07 16:04+0800\n"
-"Last-Translator: Blend4Web Team <info [at] blend4web.com>\n"
+"POT-Creation-Date: 2017-04-24 17:23+0300\n"
+"PO-Revision-Date: 2017-04-27 16:16+0800\n"
+"Last-Translator: kidux <yuzukyo@gmail.com>\n"
 "Language-Team: Chinese <info [at] blend4web.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.3.4\n"
 "Language: zh\n"
-"X-Generator: Poedit 1.8.9\n"
+"X-Generator: Poedit 1.8.12\n"
 
 #: ../colors.rst:5
 msgid "Color Management"
@@ -45,7 +45,7 @@ msgstr ""
 
 #: ../colors.rst:18
 msgid ""
-"Overwise, 8 bit of information will not be enough to encode the light intensity. This will result in incorrect "
+"Otherwise, 8 bit of information will not be enough to encode the light intensity. This will result in incorrect "
 "rendering of darker tones. For example, dark  gradients will look stepped."
 msgstr "否则，光强的8位的信息将不足以进行编码。这将导致深色调的不正确渲染。例如，深色渐变会显得加强。"
 
@@ -288,10 +288,10 @@ msgstr "概述"
 
 #: ../colors.rst:125
 msgid ""
-"Physically correct alpha compositing is performed according to the formula [`source <http://wwwnew.cs.princeton.edu/"
+"Physically correct alpha compositing is performed according to the formula [`source <http://www.cs.princeton.edu/"
 "courses/archive/spring05/cos426/papers/smith95a.pdf>`_]:"
 msgstr ""
-"物理正确的alpha合成是根据下式进行的 [`source <http://wwwnew.cs.princeton.edu/courses/archive/spring05/cos426/papers/"
+"物理正确的alpha合成是根据以下公式进行的  [`source <http://www.cs.princeton.edu/courses/archive/spring05/cos426/papers/"
 "smith95a.pdf>`_]:"
 
 #: ../colors.rst:127
@@ -327,9 +327,9 @@ msgstr ":math:`\\alpha_o = \\alpha_a + \\alpha_b (1 - \\alpha_a)`."
 
 #: ../colors.rst:139
 msgid ""
-"Preliminary multiplication of the color channels by the :math:`\\alpha`  values allows to save two multiplication "
+"Preliminary multiplication of the color channels by the :math:`\\alpha` values allows to save two multiplication "
 "operations. The more significant thing is that the derived formula can be used repeatedly without the need to divide "
-"the :math:`C_o` color by the αoαo value on each consequent iteration."
+"the :math:`C_o` color by the :math:`\\alpha_o` value on each consequent iteration."
 msgstr ""
 "将颜色通道预乘 :math:`\\alpha`  值允许保留2个乘法运算。更明显的是，衍生公式可以重复进行而不需要在每个迭代都去用 :math:"
 "`C_o` 颜色值去除 :math:`\\alpha_o` 的值."
@@ -350,7 +350,7 @@ msgstr ""
 "WebGL的上下文初始化是使用 premultipliedAlpha = true 参数（即默认值）进行的。由所有颜色通道相乘  :math:`\\alpha` 值在着色"
 "器进行输出。"
 
-#: ../colors.rst:158 ../colors.rst:153
+#: ../colors.rst:153 ../colors.rst:158
 msgid "Color Correction"
 msgstr "色彩校正"
 

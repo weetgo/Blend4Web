@@ -14,7 +14,7 @@
 
     * 安装Blend4Web SDK
 
-    * Installing Blend4Web Add-On
+    * 安装Blend4Web 插件
 
     * 切换到Blend4Web模式
 
@@ -30,23 +30,18 @@
 安装顺序
 ========
 
-There are two versions of the Blend4Web framework: Blend4Web SDK and
-Blend4Web Add-On. In order to decide which one best suits your needs,
-you will need to decide which kinds of applications you are planning
-on developing.
+这里有的两个版本的Blend4Web框架：Blend4Web SDK和Blend4Web插件。为了确
+定哪一种最适合你的需求，你需要决定哪种你正在计划开发应用程序。
 
-If you plan on using all features that Blend4Web engine has to offer,
-you should install Blend4Web SDK.
+如果你打算使用Blend4Web引擎所提供的所有功能，您应该安装Blend4Web SDK。
 
-If your intention is to develop small-scale projects, or if you are
-planning on using only a limited number of features of the Blend4Web
-engine (the normal editor, for example), you might consider installing
-the Blend4Web Add-On instead.
+如果你的目的是要开发小规模的项目，或者如果您打算只使用的Blend4Web引擎
+的功能的数量有限（例如法线编辑器），你可能会考虑安装  Blend4Web 插件
+来代替。
 
-Note, the Add-On can only export scenes to HTML format and has limited
-functionality. For example, it does not include the project manager,
-example scenes, user manual and other additional resources. However,
-it still has everything you might need to create a simple application.
+注意：插件只能导出场景到  HTML格式 和有限功能 (例如，它没有  项目管理
+，示例场景，用户手册，其他额外资源等等)，但它仍然拥有一切让你可以创建
+一个简单的应用程序。
 
 
 安装Blender
@@ -98,8 +93,8 @@ it still has everything you might need to create a simple application.
 项应该出现。
 
 
-Installing Blend4Web Add-On
----------------------------
+安装Blend4Web 插件
+------------------
 
 [图片]
 
@@ -111,10 +106,9 @@ Installing Blend4Web Add-On
 
 3. 打开 "File" 选项卡。
 
-4. Press the "Install From File..." button.
+4. 按 "从文件安装..." 按钮。
 
-5. Select the archive containing Blend4Web add-on and press
-   "Install From File..." button.
+5. 选择包含Blend4Web插件的文件，然后按 "从文件安装..." 按钮。
 
 6. 单击  "Save User Settings" 按钮。
 
@@ -124,13 +118,13 @@ Installing Blend4Web Add-On
 
 9. 打开 "File" 选项卡。
 
-10. Find the Blend4Web Add-on in the list.
+10. 在列表中找到 Blend4Web 插件。
 
-11. Check the box on the left side of its title to enable it.
+11. 勾选标题左侧的框以启用它.。
 
 12. 再按一次点击 "Save User Settings" 按钮。
 
-Now, everything should work properly.
+现在，一切都应该能正常工作了。
 
 
 
@@ -234,7 +228,7 @@ Blend4Web插件的信息选项卡，然后按 "Remove" 按钮。删除旧版本�
 
 2. 导入您的项目使用 "Import Project(s)" 按钮。
 
-3. 重新导出项目的  ".blend" 文件使用  "re-export scenes" 链接。
+3. 使用  "re-export scenes" 链接重新导出项目的  ".blend" 文件。
 
 4. 对每个导入的项目使用 "check modules" 链接来确保在程序代码中有没
    有缺 少或未使用的模块。如果有，你可以试着使用 "Update Modules" 按钮

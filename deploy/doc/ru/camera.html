@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Камера &mdash; Руководство пользователя Blend4Web 16.12</title>
+  <title>Камера &mdash; Руководство пользователя Blend4Web 17.06</title>
   
 
   
@@ -32,7 +32,7 @@
   
         <link rel="author" title="Об этих документах"
               href="about.html"/>
-    <link rel="top" title="Руководство пользователя Blend4Web 16.12" href="index.html"/>
+    <link rel="top" title="Руководство пользователя Blend4Web 17.06" href="index.html"/>
         <link rel="next" title="Материалы" href="materials.html"/>
         <link rel="prev" title="Редактор нормалей" href="normal_editor.html"/> 
 
@@ -61,7 +61,7 @@
           
           
             <div class="version">
-              v16.12
+              v17.06
             </div>
           
         
@@ -265,7 +265,7 @@
 <div class="line"><br /></div>
 </div>
 <div class="section" id="target-type-camera">
-<h3><a class="toc-backref" href="#id5">Камера типа Target</a><a class="headerlink" href="#target-type-camera" title="Ссылка на этот заголовок">¶</a></h3>
+<span id="camera-target-type"></span><h3><a class="toc-backref" href="#id5">Камера типа Target</a><a class="headerlink" href="#target-type-camera" title="Ссылка на этот заголовок">¶</a></h3>
 <a class="reference internal image-reference" href="_images/camera_limits_target.png"><img alt="_images/camera_limits_target.png" class="align-center" src="_images/camera_limits_target.png" style="width: 100%;" /></a>
 <dl class="docutils">
 <dt><em>Camera Move Style &gt; Camera Limits &gt; Distance Limits</em></dt>
@@ -303,7 +303,7 @@
 </div>
 </div>
 <div class="section" id="eye-type-camera">
-<h3><a class="toc-backref" href="#id6">Камера типа Eye</a><a class="headerlink" href="#eye-type-camera" title="Ссылка на этот заголовок">¶</a></h3>
+<span id="camera-eye-type"></span><h3><a class="toc-backref" href="#id6">Камера типа Eye</a><a class="headerlink" href="#eye-type-camera" title="Ссылка на этот заголовок">¶</a></h3>
 <a class="reference internal image-reference" href="_images/camera_limits_eye.png"><img alt="_images/camera_limits_eye.png" class="align-center" src="_images/camera_limits_eye.png" style="width: 100%;" /></a>
 <dl class="docutils">
 <dt><em>Blend4Web &gt; Horizontal Rotation Limits</em></dt>
@@ -324,7 +324,7 @@
 </div>
 </div>
 <div class="section" id="hover-type-camera">
-<h3><a class="toc-backref" href="#id7">Камера типа Hover</a><a class="headerlink" href="#hover-type-camera" title="Ссылка на этот заголовок">¶</a></h3>
+<span id="camera-hover-type"></span><h3><a class="toc-backref" href="#id7">Камера типа Hover</a><a class="headerlink" href="#hover-type-camera" title="Ссылка на этот заголовок">¶</a></h3>
 <a class="reference internal image-reference" href="_images/camera_limits_hover.png"><img alt="_images/camera_limits_hover.png" class="align-center" src="_images/camera_limits_hover.png" style="width: 100%;" /></a>
 <dl class="docutils">
 <dt><em>Camera Move Style &gt; Camera Limits &gt; Horizontal Translation Limits</em></dt>
@@ -364,7 +364,7 @@
 <div class="line-block">
 <div class="line"><br /></div>
 </div>
-<p><strong>Камера типа Static</strong></p>
+<p id="camera-static-type"><strong>Камера типа Static</strong></p>
 <a class="reference internal image-reference" href="_images/camera_limits_static.png"><img alt="_images/camera_limits_static.png" class="align-center" src="_images/camera_limits_static.png" style="width: 100%;" /></a>
 <p>Камера этого типа не имеет ограничителей, так как не контролируется пользователем.</p>
 <div class="line-block">
@@ -439,14 +439,14 @@
 <dd><p class="first last">Расстояние между камерой и объектом, привязанным к ней. По умолчанию равно 10.</p>
 </dd>
 <dt><em>Fit to Camera</em></dt>
-<dd><p class="first last">Нажатие на эту кнопку раположит объект относительно камеры так, как он будет располагаться в движке. Может использоваться для предварительного просмотра результатов привязки.</p>
+<dd><p class="first last">Нажатие на эту кнопку расположит объект относительно камеры так, как он будет располагаться в движке. Может использоваться для предварительного просмотра результатов привязки.</p>
 </dd>
 </dl>
 </div>
 <div class="section" id="camera-controls-api">
 <span id="camera-api-notes"></span><h2><a class="toc-backref" href="#id9">Управление через API</a><a class="headerlink" href="#camera-controls-api" title="Ссылка на этот заголовок">¶</a></h2>
 <p>Подробная документация API модуля: <a class="reference external" href="https://www.blend4web.com/api_doc/module-camera.html">ссылка</a>.</p>
-<p>A camera&#8217;s position and its spatial orientation are defined by the control mode. In the <code class="docutils literal"><span class="pre">EYE</span></code>, <code class="docutils literal"><span class="pre">TARGET</span></code> and <code class="docutils literal"><span class="pre">HOVER</span></code> modes, control mode has several limitations: for example, the camera&#8217;s vertical axis is always aligned along the world&#8217;s Z-axis and the camera is constantly focused on the pivot point. The <code class="docutils literal"><span class="pre">STATIC</span></code> mode camera has no such limitations, which makes it more suitable for cases when you need more complete control, such as procedural animation.</p>
+<p>Положение и ориентация камеры в пространстве определяются конкретным режимом управления. В режимах <code class="docutils literal"><span class="pre">EYE</span></code>, <code class="docutils literal"><span class="pre">TARGET</span></code> и <code class="docutils literal"><span class="pre">HOVER</span></code> модель поведения накладывает ряд ограничений, например, таких как выравнивание вертикальной оси камеры вдоль мировой оси Y и постоянная ориентация камеры на опорную точку. Для <code class="docutils literal"><span class="pre">STATIC</span></code> камеры таких ограничений нет, поэтому она лучше подходит в случаях, когда нужен более полный контроль, например, при процедурной анимации.</p>
 <p>Основные функции управления камерой находятся в модуле <a class="reference external" href="https://www.blend4web.com/api_doc/module-camera.html">camera</a>. Часть из них, относящаяся к конкретному режиму управления, начинается с соответствующих префиксов: <code class="docutils literal"><span class="pre">static_</span></code>, <code class="docutils literal"><span class="pre">eye_</span></code>, <code class="docutils literal"><span class="pre">target_</span></code> и <code class="docutils literal"><span class="pre">hover_</span></code>. Остальные методы применимы для всех режимов.</p>
 <div class="section" id="control-mode-setup">
 <span id="camera-move-style-change"></span><h3><a class="toc-backref" href="#id10">Задание режима управления</a><a class="headerlink" href="#control-mode-setup" title="Ссылка на этот заголовок">¶</a></h3>
@@ -485,7 +485,7 @@
 <span class="nx">m_cam</span><span class="p">.</span><span class="nx">target_setup</span><span class="p">(</span><span class="nx">camera</span><span class="p">,</span> <span class="p">{</span> <span class="nx">pos</span><span class="o">:</span> <span class="nx">POS</span><span class="p">,</span> <span class="nx">pivot</span><span class="o">:</span> <span class="nx">LOOK_AT</span><span class="p">,</span>
         <span class="nx">dist_lim</span><span class="o">:</span> <span class="nx">TARGET_DIST_LIMITS</span><span class="p">,</span> <span class="nx">use_panning</span><span class="o">:</span> <span class="kc">true</span> <span class="p">});</span>
 
-<span class="c1">// setup HOVER camera on a fixed distance (without zooming) reltively to its pivot</span>
+<span class="c1">// setup HOVER camera on a fixed distance (without zooming) relatively to its pivot</span>
 <span class="nx">m_cam</span><span class="p">.</span><span class="nx">hover_setup</span><span class="p">(</span><span class="nx">camera</span><span class="p">,</span> <span class="p">{</span> <span class="nx">pos</span><span class="o">:</span> <span class="nx">POS</span><span class="p">,</span> <span class="nx">pivot</span><span class="o">:</span> <span class="nx">LOOK_AT</span> <span class="p">});</span>
 
 <span class="c1">// setup HOVER camera with zooming (distance + angle limits)</span>
@@ -693,8 +693,8 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2014-2016, Триумф.
-      Обновлено: 2016-12-22.
+        &copy; Copyright 2014-2017, Триумф.
+      Обновлено: 2017-06-30.
 
     </p>
   </div>
@@ -750,7 +750,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v16.12',
+            VERSION:'v17.06',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

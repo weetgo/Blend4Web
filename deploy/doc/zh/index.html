@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>目录 &mdash; Blend4Web 16.12 用户手册</title>
+  <title>目录 &mdash; Blend4Web 17.06 用户手册</title>
   
 
   
@@ -32,7 +32,7 @@
   
         <link rel="author" title="关于这些文档"
               href="about.html"/>
-    <link rel="top" title="Blend4Web 16.12 用户手册" href="#"/>
+    <link rel="top" title="Blend4Web 17.06 用户手册" href="#"/>
         <link rel="next" title="概述" href="about.html"/> 
 
   
@@ -60,7 +60,7 @@
           
           
             <div class="version">
-              v16.12
+              v17.06
             </div>
           
         
@@ -181,10 +181,13 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">工作流程</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="workflow.html#authoring-scenes">创作场景</a></li>
-<li class="toctree-l2"><a class="reference internal" href="workflow.html#displaying-scenes-in-the-viewer">在浏览器显示场景</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#creating-a-new-project">创建一个新项目</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#creating-scenes">创建场景</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#preparing-a-scene-to-use-in-blend4web">准备一个在Blend4Web中使用的场景</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#exporting-scenes">导出场景</a></li>
 <li class="toctree-l2"><a class="reference internal" href="workflow.html#application-development">应用程序开发</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#project-building">构建项目</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflow.html#project-deploying">项目部署</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="project_manager.html">项目管理</a><ul>
@@ -230,6 +233,7 @@
 <li class="toctree-l2"><a class="reference internal" href="objects.html#types">类型</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#static-and-dynamic-objects">静态和动态物体</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#settings">设置</a></li>
+<li class="toctree-l2"><a class="reference internal" href="objects.html#object-constraints">Object Constraints</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#anchor-settings">锚设置</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#object-transform-api">物体变换API</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#get-object-api">获取物体API</a></li>
@@ -237,6 +241,8 @@
 <li class="toctree-l2"><a class="reference internal" href="objects.html#copying-objects-instancing">复制物体（实例化）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#quaternions">四元数</a></li>
 <li class="toctree-l2"><a class="reference internal" href="objects.html#moving-via-tsr-vectors">通过TSR矢量移动</a></li>
+<li class="toctree-l2"><a class="reference internal" href="objects.html#line-rendering">线渲染</a></li>
+<li class="toctree-l2"><a class="reference internal" href="objects.html#levels-of-detail">层次细节</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="meshes.html">网格</a><ul>
@@ -250,12 +256,13 @@
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#interface">界面</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#activate">启用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#show-normals">显示法线</a></li>
-<li class="toctree-l2"><a class="reference internal" href="normal_editor.html#rotation">旋转</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normal_editor.html#rotate">Rotate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normal_editor.html#scale">Scale</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#absolute-and-offset-modes">绝对和偏移模式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#split-normals">分割法线</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#average">平均</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#restore">恢复</a></li>
-<li class="toctree-l2"><a class="reference internal" href="normal_editor.html#tree-foliage-and-face">Tree（树），Foliage（树叶） 和 Face（面）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="normal_editor.html#d-cursor-axis-and-face">3D Cursor, Axis and Face</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#copy-paste">Copy（复制）/Paste（粘贴）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="normal_editor.html#copy-from-mesh">从网格复制</a></li>
 </ul>
@@ -275,6 +282,8 @@
 <li class="toctree-l2"><a class="reference internal" href="materials.html#viewport-properties">视图属性</a></li>
 <li class="toctree-l2"><a class="reference internal" href="materials.html#engine-specific-parameters">引擎特定参数</a></li>
 <li class="toctree-l2"><a class="reference internal" href="materials.html#halo-materials">光晕材质</a></li>
+<li class="toctree-l2"><a class="reference internal" href="materials.html#material-api">材质API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="materials.html#inherit-material">材质继承</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="material_library.html">材质库</a><ul>
@@ -287,6 +296,7 @@
 <li class="toctree-l2"><a class="reference internal" href="node_materials.html#standard-nodes">标准节点</a></li>
 <li class="toctree-l2"><a class="reference internal" href="node_materials.html#engine-specific-nodes">游戏引擎特定节点</a></li>
 <li class="toctree-l2"><a class="reference internal" href="node_materials.html#cycles-nodes">Cycles 节点</a></li>
+<li class="toctree-l2"><a class="reference internal" href="node_materials.html#limitations">Limitations</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logic_editor.html">逻辑编辑器</a><ul>
@@ -309,7 +319,7 @@
 <li class="toctree-l2"><a class="reference internal" href="lighting.html#lighting-with-light-sources">用光源照明</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lighting.html#environment-lighting-ambient">环境照明（环境）</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lighting.html#shadows">阴影</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lighting.html#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="lighting.html#background">背景</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="postprocessing_effects.html">后期处理效果</a><ul>
@@ -403,16 +413,18 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="developers.html">对应用程序开发人员</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="developers.html#application-programming">应用程序编程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="developers.html#application-development">应用程序开发</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#background-transparency">背景透明</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#resource-conversion">资源转换</a></li>
+<li class="toctree-l2"><a class="reference internal" href="developers.html#gzip-compression">GZIP压缩</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#code-examples">示例代码</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#loading-application-assets">加载应用程序资产</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#event-driven-model">事件驱动模型</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#sdk-file-structure">SDK文件结构</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#loading-local-resources">加载本地资源</a></li>
 <li class="toctree-l2"><a class="reference internal" href="developers.html#quality-profiles">品质配置</a></li>
-<li class="toctree-l2"><a class="reference internal" href="developers.html#non-fullscreen-web-apps">非全屏Web应用程序</a></li>
+<li class="toctree-l2"><a class="reference internal" href="developers.html#non-standard-canvas-position-and-orientation">非标准画布位置和方向</a></li>
+<li class="toctree-l2"><a class="reference internal" href="developers.html#mobile-web-apps">移动 Web 应用程序</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="developers_advanced.html">对于引擎开发者</a><ul>
@@ -449,6 +461,9 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="release_notes.html">发布说明</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="release_notes.html#v17-06">v17.06</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release_notes.html#v17-04">v17.04</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release_notes.html#v17-02">v17.02</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release_notes.html#v16-12">v16.12</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release_notes.html#v16-11">v16.11</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release_notes.html#v16-10">v16.10</a></li>
@@ -504,8 +519,8 @@
 
   <div role="contentinfo">
     <p>
-        &copy; 版权所有 2014-2016, Triumph.
-      最后更新于 2016-12-22.
+        &copy; 版权所有 2014-2017, Triumph.
+      最后更新于 2017-06-30.
 
     </p>
   </div>
@@ -561,7 +576,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v16.12',
+            VERSION:'v17.06',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

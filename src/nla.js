@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@
 b4w.module["__nla"] = function(exports, require) {
 
 var m_anim      = require("__animation");
-var m_cfg       = require("__config");
 var m_obj       = require("__objects");
 var m_obj_util  = require("__obj_util");
 var m_print     = require("__print");
@@ -34,8 +33,6 @@ var m_sfx       = require("__sfx");
 var m_tex       = require("__textures");
 var m_time      = require("__time");
 var m_util      = require("__util");
-
-var cfg_def = m_cfg.defaults;
 
 var _nla_arr = [];
 var _start_time = -1;
@@ -59,6 +56,7 @@ exports.update_object = function(bpy_source, obj) {
                     m_obj_util.is_camera(obj) ||
                     m_obj_util.is_mesh(obj) ||
                     m_obj_util.is_empty(obj) ||
+                    m_obj_util.is_line(obj) ||
                     m_obj_util.is_lamp(obj) ||
                     // no need for separate slot in case of sound
                     m_obj_util.is_speaker(obj) ||
@@ -98,7 +96,18 @@ exports.update_object = function(bpy_source, obj) {
             }
         }
 
-        if (!m_obj_util.is_world(obj)) {
+        if (m_obj_util.is_world(obj)) {
+            if (bpy_source["use_nodes"] && bpy_source["node_tree"]) {
+                var nla_tracks = [];
+                get_nodetree_nla_tracks_r(bpy_source["node_tree"], nla_tracks, [bpy_source["name"]]);
+                var nla_events = get_nla_events(nla_tracks, slot_num);
+                if (nla_events.length) {
+                    slot_num += assign_anim_slots(nla_events, slot_num);
+                    obj.nla_events = obj.nla_events.concat(nla_events);
+                }
+            }
+
+        } else {
             for (var j = 0; j < bpy_source["particle_systems"].length; j++) {
                 var psys = bpy_source["particle_systems"][j];
                 var pset = psys["settings"];
@@ -138,6 +147,7 @@ exports.update_object = function(bpy_source, obj) {
                     obj.nla_events.push(ev);
                 }
             }
+
         }
     }
 }
@@ -220,7 +230,7 @@ exports.update_scene = function(scene, is_cyclic, data_id) {
                         + texture.frame_duration, 0, nla.frame_end);
             }
 
-            ev.anim_name = textures[i].name;
+            ev.anim_name = textures[i]["name"];
             nla.textures.push(texture);
         }
     }
@@ -624,33 +634,36 @@ function frame_need_play_video(cf, vtex) {
 /**
  * NOTE: unused
  */
-function pause_scheduled_objects(objects) {
-    for (var i = 0; i < objects.length; i++) {
-        var obj = objects[i];
-        var nla_events = obj.nla_events;
-        for (var j = 0; j < nla_events.length; j++) {
-            var ev = nla_events[j];
-            if (ev.scheduled && !ev.paused) {
-                process_event_pause(obj);
-                ev.paused = true;
-            }
-        }
-    }
-}
+// function pause_scheduled_objects(objects) {
+//     for (var i = 0; i < objects.length; i++) {
+//         var obj = objects[i];
+//         var nla_events = obj.nla_events;
+//         for (var j = 0; j < nla_events.length; j++) {
+//             var ev = nla_events[j];
+//             if (ev.scheduled && !ev.paused) {
+//                 process_event_pause(obj);
+//                 ev.paused = true;
+//             }
+//         }
+//     }
+// }
 
-function resume_scheduled_objects(objects) {
-    for (var i = 0; i < objects.length; i++) {
-        var obj = objects[i];
-        var nla_events = obj.nla_events;
-        for (var j = 0; j < nla_events.length; j++) {
-            var ev = nla_events[j];
-            if (ev.paused) {
-                process_event_resume(obj);
-                ev.paused = false;
-            }
-        }
-    }
-}
+/**
+ * NOTE: unused
+ */
+// function resume_scheduled_objects(objects) {
+//     for (var i = 0; i < objects.length; i++) {
+//         var obj = objects[i];
+//         var nla_events = obj.nla_events;
+//         for (var j = 0; j < nla_events.length; j++) {
+//             var ev = nla_events[j];
+//             if (ev.paused) {
+//                 process_event_resume(obj);
+//                 ev.paused = false;
+//             }
+//         }
+//     }
+// }
 
 function calc_curr_frame_scene(nla, timeline) {
 

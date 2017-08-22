@@ -314,8 +314,8 @@ Viewport".
    умолчанию равно 10.
 
 *Fit to Camera*
-   Нажатие на эту кнопку раположит объект относительно камеры так, как
-   он будет располагаться в движке. Может использоваться для
+   Нажатие на эту кнопку расположит объект относительно камеры так,
+   как он будет располагаться в движке. Может использоваться для
    предварительного просмотра результатов привязки.
 
 
@@ -324,13 +324,13 @@ Viewport".
 
 Подробная документация API модуля: ссылка.
 
-A camera's position and its spatial orientation are defined by the
-control mode. In the "EYE", "TARGET" and "HOVER" modes, control mode
-has several limitations: for example, the camera's vertical axis is
-always aligned along the world's Z-axis and the camera is constantly
-focused on the pivot point. The "STATIC" mode camera has no such
-limitations, which makes it more suitable for cases when you need more
-complete control, such as procedural animation.
+Положение и ориентация камеры в пространстве определяются конкретным
+режимом управления. В режимах "EYE", "TARGET" и "HOVER" модель
+поведения накладывает ряд ограничений, например, таких как
+выравнивание вертикальной оси камеры вдоль мировой оси Y и постоянная
+ориентация камеры на опорную точку. Для "STATIC" камеры таких
+ограничений нет, поэтому она лучше подходит в случаях, когда нужен
+более полный контроль, например, при процедурной анимации.
 
 Основные функции управления камерой находятся в модуле camera. Часть
 из них, относящаяся к конкретному режиму управления, начинается с
@@ -381,7 +381,7 @@ eye_setup(), target_setup() и hover_setup(). Они принимают объе
    m_cam.target_setup(camera, { pos: POS, pivot: LOOK_AT,
            dist_lim: TARGET_DIST_LIMITS, use_panning: true });
 
-   // setup HOVER camera on a fixed distance (without zooming) reltively to its pivot
+   // setup HOVER camera on a fixed distance (without zooming) relatively to its pivot
    m_cam.hover_setup(camera, { pos: POS, pivot: LOOK_AT });
 
    // setup HOVER camera with zooming (distance + angle limits)

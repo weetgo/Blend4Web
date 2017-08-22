@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,8 +43,6 @@ var cfg_phy = m_cfg.physics;
 var cfg_def = m_cfg.defaults;
 var cfg_ldr = m_cfg.assets;
 
-var RAY_CMP_PRECISION = 0.0000001;
-
 var _phy_fps = 0;
 var _workers = [];
 var _scenes = [];
@@ -62,9 +60,7 @@ var _unique_counter = {
 }
 
 var _vec3_tmp = new Float32Array(3);
-var _vec4_tmp = new Float32Array(4);
 var _quat_tmp = new Float32Array(4);
-var _mat4_tmp = new Float32Array(16);
 var _tsr_tmp  = m_tsr.create();
 var _tsr_tmp2 = m_tsr.create();
 
@@ -120,7 +116,7 @@ exports.cleanup = function() {
 
     _bounding_objects = {};
     _bounding_objects_arr.length = 0;
-    _collision_ids.length = 0;
+    _collision_ids = ["ANY"];
 
     for (var cnt in _unique_counter)
         _unique_counter[cnt] = 0;
@@ -141,9 +137,8 @@ function add_compound_children(parent, container) {
 
 exports.append_object = function(obj, scene) {
 
-    var render = obj.render;
-    if (!render)
-        m_util.panic("No object render: " + obj.name);
+    if (!scene_has_physics(scene))
+        return;
 
     var phy_set = obj.physics_settings;
 
@@ -161,7 +156,7 @@ exports.append_object = function(obj, scene) {
     // constraints
 
     if (is_vehicle_chassis(obj) || is_vehicle_hull(obj) ||
-            is_character(obj) || is_floater_main(obj) || obj.use_obj_physics) {
+            obj.is_character || is_floater_main(obj) || obj.use_obj_physics) {
         var is_navmesh = is_navigation_mesh(obj);
         if (is_navmesh)
             var phy = init_navigation_mesh_physics(obj, scene);
@@ -174,7 +169,6 @@ exports.append_object = function(obj, scene) {
             batch: null,
             physics: phy
         };
-
 
         if (!is_navmesh) {
             bundles.push(pb);
@@ -222,15 +216,15 @@ exports.append_object = function(obj, scene) {
     if (is_vehicle_chassis(obj) || is_vehicle_hull(obj)) {
         init_vehicle(obj, worker);
         update_vehicle_controls(obj, obj.vehicle, worker);
-    } else if (is_character(obj))
+    } else if (obj.is_character)
         init_character(obj, worker);
     else if (is_floater_main(obj))
         init_floater(obj, worker);
 
     for (var i = 0; i < _bounding_objects_arr.length; i++) {
-        var obj = _bounding_objects_arr[i];
-        if (obj.physics)
-            process_rigid_body_joints(obj);
+        var bound_obj = _bounding_objects_arr[i];
+        if (bound_obj.physics)
+            process_rigid_body_joints(bound_obj);
     }
 }
 
@@ -355,7 +349,7 @@ function process_message(worker, msg_id, msg) {
         }
         break;
     case m_ipc.IN_REMOVE_RAY_TEST:
-        remove_ray_test(id);
+        remove_ray_test(msg.id);
         break;
     case m_ipc.IN_PING:
         var idx = _workers.indexOf(worker);
@@ -404,7 +398,8 @@ function update_interpolation_data(obj, time, trans, quat, linvel, angvel) {
     var phy = obj.physics;
 
     phy.curr_time = time;
-    m_tsr.set_sep(trans, 1.0, quat, phy.curr_tsr);
+    var scale = m_tsr.get_scale(obj.render.world_tsr);
+    m_tsr.set_sep(trans, scale, quat, phy.curr_tsr);
 
     m_vec3.copy(linvel, phy.linvel);
     m_vec3.copy(angvel, phy.angvel);
@@ -449,7 +444,6 @@ function traverse_collision_tests(scene, body_id_a, body_id_b, pair_result,
             }
 
             if (results_changed) {
-                var pair_results = test.pair_results;
                 var result = calc_coll_result(test);
 
                 if (coll_pos && test.body_id_src != body_id_a)
@@ -497,7 +491,6 @@ function correct_coll_pos_norm(pos, norm, dist) {
 
 function exec_ray_test_cb(test, hit_fract, obj_hit, hit_time, hit_pos, hit_norm) {
 
-    var collision_id = test.collision_id;
     var callback = test.callback;
 
     if (hit_pos)
@@ -761,8 +754,6 @@ function init_bounding_physics(obj, compound_children, worker) {
 
     var physics_type = phy_set.physics_type;
 
-    var bb = render.bb_local;
-
     var body_id = get_unique_body_id();
 
     if (obj.type == "CAMERA") {
@@ -770,9 +761,7 @@ function init_bounding_physics(obj, compound_children, worker) {
                 phy_set.collision_bounds_type : "BOX";
         var bounding_object = find_bounding_type(bounding_type, render);
 
-        var friction = render.friction;
-        var restitution = render.elasticity;
-
+        // NOTE: some default values
         var friction = 0.5;
         var restitution = 0.0;
     } else if (obj.type == "EMPTY") {
@@ -1035,7 +1024,8 @@ function add_vehicle_prop(obj_prop, obj_chassis_hull, chassis_body_id,
                 suspension_rest_length, roll_influence, radius, is_front);
         break;
     case VT_HULL:
-        m_ipc.post_msg(worker, m_ipc.OUT_ADD_BOAT_BOB, chassis_body_id, conn_point, obj_prop.synchronize_pos);
+        m_ipc.post_msg(worker, m_ipc.OUT_ADD_BOAT_BOB, chassis_body_id, 
+                conn_point, obj_prop.bob_synchronize_pos);
         break;
     }
 }
@@ -1298,7 +1288,7 @@ exports.clear_constraint = function(obj_a) {
     var phy = obj_a.physics;
     var cons_id = phy.cons_id;
 
-    var worker = find_worker_by_body_id(body_a);
+    var worker = find_worker_by_body_id(phy.body_id);
 
     m_ipc.post_msg(worker, m_ipc.OUT_REMOVE_CONSTRAINT, cons_id);
     phy.cons_id = null;
@@ -1418,7 +1408,7 @@ function transform_changed(obj) {
 
 
 /**
- * Move object by applying velocity in world space.
+ * Move object by applying velocity in its space.
  */
 exports.apply_velocity = function(obj, vx_local, vy_local, vz_local) {
 
@@ -1457,8 +1447,7 @@ exports.apply_velocity = function(obj, vx_local, vy_local, vz_local) {
 
 /**
  * Move the object by applying velocity in the world space.
- * @param disable_up Disable up speed (swimming on surface)
- * TODO: apply_velocity -> apply_velocity_local
+ * TODO: rename apply_velocity -> apply_velocity_local
  */
 exports.apply_velocity_world = function(obj, vx, vy, vz) {
 
@@ -1518,6 +1507,12 @@ function apply_torque(obj, tx_local, ty_local, tz_local) {
     var body_id = obj.physics.body_id;
     var worker = find_worker_by_body_id(body_id);
     m_ipc.post_msg(worker, m_ipc.OUT_APPLY_TORQUE, body_id, t_world[0], t_world[1], t_world[2]);
+}
+
+exports.set_angular_velocity = function(obj, av_x, av_y, av_z) {
+    var body_id = obj.physics.body_id;
+    var worker = find_worker_by_body_id(body_id);
+    m_ipc.post_msg(worker, m_ipc.OUT_SET_ANGULAR_VELOCITY, body_id, av_x, av_y, av_z);
 }
 
 /**
@@ -1871,8 +1866,6 @@ exports.append_ray_test = function(obj, from, to, collision_id, callback,
 
     var sphy = scene._physics;
 
-    var id = test.id;
-
     sphy.ray_tests[id] = test;
     sphy.ray_tests_arr.push(test);
 
@@ -2210,9 +2203,8 @@ exports.wheel_index = function(vehicle_part) {
     }
 }
 
-exports.is_character = is_character;
-function is_character(obj) {
-    return obj.is_character;
+exports.has_character_physics = function(obj) {
+    return obj.physics && obj.physics.is_character;
 }
 
 exports.is_floater_main = is_floater_main;
@@ -2233,6 +2225,8 @@ exports.debug_workers = function() {
 
 exports.remove_object = function(obj) {
 
+    var body_id = obj.physics.body_id;
+
     if (obj.physics.type == "BOUNDING") {
         var ind = _bounding_objects_arr.indexOf(obj);
         if (ind == -1)
@@ -2240,8 +2234,6 @@ exports.remove_object = function(obj) {
         delete _bounding_objects[body_id];
         _bounding_objects_arr.splice(ind, 1);
     }
-
-    var body_id = obj.physics.body_id
 
     var worker = find_worker_by_body_id(body_id);
     var scene = find_scene_by_worker(worker);
@@ -2264,4 +2256,13 @@ exports.remove_object = function(obj) {
 
     m_ipc.post_msg(worker, m_ipc.OUT_REMOVE_BODY, body_id);
 }
+
+exports.has_dynamic_settings = function(obj) {
+    var phy_set = obj.physics_settings;
+
+    return (obj.is_vehicle || obj.is_floating || obj.is_character) ||
+           (obj.use_obj_physics && !phy_set.use_ghost && phy_set.mass > 0 &&
+           (phy_set.physics_type == "DYNAMIC" || phy_set.physics_type == "RIGID_BODY"));
+}
+
 }

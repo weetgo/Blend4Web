@@ -9,12 +9,10 @@ var m_anim = require("animation");
 var m_sfx = require("sfx");
 var m_trans = require("transform");
 var m_mat = require("material");
-var m_cons = require("constraints");
 
 var m_conf = require("game_config");
 var m_char = require("character");
 var m_enemies = require("enemies");
-var m_env = require("environment");
 var m_interface = require("interface");
 
 var _level_conf = null; // specified during initialization
@@ -58,9 +56,12 @@ exports.init = function(elapsed_sensor, level_conf) {
             var target_val = obelisk_wrapper.num_gems / _level_conf.OBELISK_NUM_GEMS;
             var val = obelisk_wrapper.magic_val;
             var elapsed = m_ctl.get_sensor_value(obj, id, 0);
-            if (val == target_val)
+            var val_diff = val - target_val;
+
+            if (Math.abs(val_diff) <= 0.25 * elapsed) {
+                obelisk_wrapper.magic_val = target_val;
                 return;
-            else if (val < target_val)
+            } else if (val < target_val)
                 obelisk_wrapper.magic_val += 0.25 * elapsed;
             else if (val > target_val)
                 obelisk_wrapper.magic_val -= 0.25 * elapsed;

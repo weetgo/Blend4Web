@@ -111,7 +111,7 @@ This panel contains a range of debugging tools, including:
 
         ``BATCH VIEW`` - in this view mode, every batch is rendered using a specific (flat) color. The colors used in rendering can be changed to randomly generated colors by clicking the ``Change Colors`` button.
 
-        ``RENDER TIME`` - the scene is rendered in different colors to represent the complexity of various parts of the scene. The lightest parts are rendered using shades of green, heavier - shades of orange, and the most resourse-demanding parts of the scene are colored red.
+        ``RENDER TIME`` - the scene is rendered in different colors to represent the complexity of various parts of the scene. The lightest parts are rendered using shades of green, heavier - shades of orange, and the most resource-demanding parts of the scene are colored red.
 
 *Change Colors*
     This button randomly changes the colors that are used in the ``CLUSTER VIEW`` and ``BATCH VIEW`` rendering modes. This feature is useful in cases when colors that are picked randomly by the engine are too similar and make it difficult to distinguish parts of the image.
@@ -127,7 +127,7 @@ This panel contains a range of debugging tools, including:
         :align: center
         :width: 100%
 
-    This button shows a list of rendered subscenes and its parameters, incuding:
+    This button shows a list of rendered subscenes and its parameters, including:
 
         *SCENE*
             The name of the current scene.
@@ -264,7 +264,7 @@ Available parameters:
     This parameter defines the base color of a selected material.
 
 *Reflectivity*
-    This parameter sets the refelctivity factor of a selected material. Its value is equal to zero by default.
+    This parameter sets the reflectivity factor of a selected material. Its value is equal to zero by default.
 
 *Fresnel*
     The power of the Fresnel effect for the reflection. Set to zero by default.
@@ -384,6 +384,15 @@ Setup for water rendering parameters, including color transitions by depth and b
 
 The settings for water rendering are described in the :ref:`Outdoor Rendering <water>` chapter. Scene Viewer uses the same settings as the Blend4Web engine itself.
 
+.. _viewer_mist:
+
+Mist
+....
+
+Setup for fog parameters.
+
+Scene Viewer uses standard fog rendering settings that are described in the :ref:`dedicated chapter <fog>`.
+
 .. _viewer_wind:
 
 Wind
@@ -392,6 +401,15 @@ Wind
 Setup for wind parameters, including direction and strength.
 
 The same parameters as the ones used by Scene Viewer are available in Blender. These parameters are described in the :ref:`corresponding chapter <wind>`.
+
+.. _viewer_wind_bending:
+
+Wind Bending
+............
+
+Setup for wind bending effect parameters.
+
+The same set of wind bending parameters is available in Blender. It is described in the :ref:`Outdoor Rendering <wind_bending>` chapter.
 
 .. _viewer_ssao:
 

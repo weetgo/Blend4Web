@@ -41,6 +41,7 @@
 
 #var USE_DERIVATIVES_EXT 0
 #var CAMERA_TYPE CAM_TYPE_PERSP
+#var IS_WORLD 0
 
 /*==============================================================================
                                    IMPORTS
@@ -125,16 +126,16 @@ vec2 vec_to_uv(vec3 vec)
 float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 {
 	float c = abs(dot(inc, norm));
-	float g = eta * eta - 1.0 + c * c;
+	float g = eta * eta - _1_0 + c * c;
 	float result;
 
-	if (g > 0.0) {
+	if (g > _0_0) {
 		g = sqrt(g);
 		float A = (g - c) / (g + c);
-		float B = (c * (g + c) - 1.0) / (c * (g - c) + 1.0);
-		result = 0.5 * A * A * (1.0 + B * B);
+		float B = (c * (g + c) - _1_0) / (c * (g - c) + _1_0);
+		result = _0_5 * A * A * (_1_0 + B * B);
 	} else {
-		result = 1.0;  // no refracted component
+		result = _1_0;  // no refracted component
 	}
 
 	return result;
@@ -248,8 +249,15 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 #endnode
 
 #node GEOMETRY_NO
+    #node_var USE_NORMAL_IN 0
+    #node_in vec3 normal_in
     #node_out vec3 normal_out
-    normal_out = nin_geom_normal.xyz;
+
+# node_if USE_NORMAL_IN
+        normal_out = normal_in;
+# node_else
+       normal_out = nin_geom_normal.xyz;
+# node_endif
 #endnode
 
 #node GEOMETRY_FB
@@ -357,48 +365,57 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_out float distance_out
     #node_out optional float visibility_factor_out
 
-# node_if USE_OUT_color_out
+# node_if LAMP_INDEX != -1
+
+#  node_if USE_OUT_color_out
     color_out = u_lamp_light_color_intensities[LAMP_INDEX];
-# node_endif
+#  node_endif
 
     // see process_lamp
     vec3 lld = u_lamp_light_directions[LAMP_INDEX];
     vec3 llp = u_lamp_light_positions[LAMP_INDEX];
-# node_if LAMP_TYPE == SPOT || LAMP_TYPE == POINT
+#  node_if LAMP_TYPE == SPOT || LAMP_TYPE == POINT
 
         // mimic blender behavior
         light_vec_out = -v_pos_world + llp;
         distance_out = length(light_vec_out);
         light_vec_out = normalize(light_vec_out);
 
-#  node_if USE_OUT_visibility_factor_out
+#   node_if USE_OUT_visibility_factor_out
         visibility_factor_out = LAMP_LIGHT_DIST / (LAMP_LIGHT_DIST + distance_out * distance_out);
 
-#   node_if LAMP_TYPE == SPOT
+#    node_if LAMP_TYPE == SPOT
             float spot_factor = dot(light_vec_out, lld);
             spot_factor *= smoothstep(_0_0, _1_0,
                     (spot_factor - LAMP_SPOT_SIZE) / LAMP_SPOT_BLEND);
             visibility_factor_out *= spot_factor;
-#   node_endif
+#    node_endif
 
-#   node_if LAMP_USE_SPHERE
+#    node_if LAMP_USE_SPHERE
     visibility_factor_out *= max(LAMP_LIGHT_DIST -distance_out, _0_0) / LAMP_LIGHT_DIST;
+#    node_endif
+
+#   node_endif
+#  node_else // LAMP_TYPE == SPOT || LAMP_TYPE == POINT
+#   node_if USE_OUT_light_vec_out
+        light_vec_out = lld;
 #   node_endif
 
-#  node_endif
-# node_else // LAMP_TYPE == SPOT || LAMP_TYPE == POINT
-#  node_if USE_OUT_light_vec_out
-        light_vec_out = lld;
-#  node_endif
-
-#  node_if USE_OUT_distance_out
+#   node_if USE_OUT_distance_out
         distance_out = length(llp - v_pos_world);
-#  node_endif
+#   node_endif
 
-#  node_if USE_OUT_visibility_factor_out
+#   node_if USE_OUT_visibility_factor_out
         visibility_factor_out = _1_0;
+#   node_endif
+#  node_endif // LAMP_TYPE == SPOT || LAMP_TYPE == POINT
+# node_else // LAMP_INDEX == -1
+#  node_if USE_OUT_color_out
+    color_out = vec3(_0_0);
 #  node_endif
-# node_endif // LAMP_TYPE == SPOT || LAMP_TYPE == POINT
+    light_vec_out = vec3(_0_0);
+    distance_out = 0.0;
+# node_endif // LAMP_INDEX == -1
 #endnode
 
 #node NORMAL
@@ -435,6 +452,8 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_in vec3 normal_in
     #node_in vec3 e_color
     #node_in float emission
+    #node_in vec3 a_color
+    #node_in float alpha
     #node_out vec3 E
     #node_out vec3 A
     #node_out vec3 D
@@ -442,10 +461,12 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_out vec3 normal
     #node_out vec4 bsdf_params
     #node_out vec4 shadow_factor
+    #node_out vec3 d_color_out
     #node_out vec3 s_color_out
-    #node_out float metalness_out
     #node_out vec3 e_color_out
     #node_out float emission_out
+    #node_out vec3 a_color_out
+    #node_out float alpha_out
 
     // diffuse
     D = d_color;
@@ -453,10 +474,12 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     S = s_color;
 
     normal = normal_in;
+    d_color_out = d_color;
     s_color_out = s_color;
-    metalness_out = metalness;
     e_color_out = e_color;
     emission_out = emission;
+    a_color_out = a_color;
+    alpha_out = alpha;
 
     // old emission
     E = nin_emit * D;
@@ -476,24 +499,38 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_in vec4 color_in
     #node_in vec3 specular_in
     #node_in vec3 normal
+    #node_in vec4 bsdf_params
+    #node_in vec3 d_color
     #node_in vec3 s_color
-    #node_in float metalness
     #node_in vec3 e_color
     #node_in float emission
+    #node_in vec3 a_color
+    #node_in float alpha_in
+    #node_out vec3 color_out
+
+    float s_roughness = clamp(bsdf_params[1], _0_0, _1_0);
+    float metalness = bsdf_params[2];
+
+    color_out = color_in.rgb;
 
 # node_if REFLECTION_TYPE == REFL_CUBE
-    nout_color = apply_mirror_bsdf(color_in.rgb, s_color, nin_eye_dir, normal,
-                                   metalness, mat3(_0_0));
+    color_out += apply_mirror_bsdf(d_color, s_color, nin_eye_dir, normal,
+                                   metalness, s_roughness, mat3(_0_0));
 # node_elif REFLECTION_TYPE == REFL_PLANE
-    nout_color = apply_mirror_bsdf(color_in.rgb, s_color, nin_eye_dir, normal,
+    color_out += apply_mirror_bsdf(d_color, s_color, nin_eye_dir, normal,
                                    metalness, u_view_tsr_frag);
-# node_else
-    nout_color = color_in.rgb;
 # node_endif
 
-    // nout_color = mix(nout_color, e_color, emission);
-    nout_color += specular_in;
-    nout_color = mix(nout_color, e_color, emission);
+    // color_out = mix(color_out, e_color, emission);
+    color_out += specular_in;
+    color_out = mix(color_out, e_color, emission);
+
+# node_if USE_NODE_BSDF_TRANSPARENT
+    vec3 back_color = GLSL_TEXTURE(u_refractmap, v_tex_pos_clip.xy/v_tex_pos_clip.z).rgb;
+    srgb_to_lin(back_color);
+    a_color = a_color * back_color;
+    color_out += a_color;
+# node_endif
     // NOTE: using unused variable to pass shader verification
     normal;
 #endnode
@@ -504,7 +541,7 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 //      http://blog.selfshadow.com/publications/s2013-shading-course/
 //
 //  GGX optimization:
-//      http://www.filmicworlds.com/2014/04/21/optimizing-ggx-shaders-with-dotlh/
+//      http://filmicworlds.com/blog/optimizing-ggx-shaders-with-dotlh/
 #node BSDF_COMPUTE
     #node_var MAT_USE_TBN_SHADING 0
     #node_in vec3 ldir
@@ -561,7 +598,9 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
             }
         } else
             lfactor = dot_nl;
-        lfactor = max(lfactor, _0_0);
+        // energy conservation is broken
+        // but it looks closer to Blender
+        lfactor = max(lfactor, _0_0) / M_PI;
     }
 
     // specular GGX
@@ -624,22 +663,27 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_out vec3 normal
     #node_out vec3 e_color
     #node_out float emission
+    #node_out vec3 a_color
+    #node_out float alpha
 
     d_color = color_in;
     d_roughness = roughness_in;
     metalness = _0_0;
     emission = _0_0;
+    alpha = _1_0;
 # node_if USE_NORMAL_IN
     normal = normal_in;
 # node_else
-     normal = nin_normal;
+    normal = nin_normal;
 # node_endif
 
     // NOTE: using unused variable to pass shader verification
+    // + explicit zeroing to prevent glitches in some browsers
     surface;
-    s_color;
-    s_roughness;
-    e_color;
+    s_color = vec3(_0_0);
+    s_roughness = _0_0;
+    e_color = vec3(_0_0);
+    a_color = vec3(_0_0);
 #endnode
 
 #node BSDF_GLASS
@@ -669,12 +713,14 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_out vec3 normal
     #node_out vec3 e_color
     #node_out float emission
-
+    #node_out vec3 a_color
+    #node_out float alpha
 
     s_color = color_in;
     s_roughness = roughness_in;
     metalness = _1_0;
     emission = _0_0;
+    alpha = _1_0;
 # node_if USE_NORMAL_IN
     normal = normal_in;
 # node_else
@@ -682,10 +728,12 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 # node_endif
 
     // NOTE: using unused variable to pass shader verification
+    // + explicit zeroing to prevent glitches in some browsers
     surface;
-    d_color;
-    d_roughness;
-    e_color;
+    d_color = vec3(_0_0);
+    d_roughness = _0_0;
+    e_color = vec3(_0_0);
+    a_color = vec3(_0_0);
 #endnode
 
 #node BSDF_HAIR
@@ -702,9 +750,33 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 #endnode
 
 #node BSDF_TRANSPARENT
-    #node_in vec3 color
-    #node_out vec3 vec
-    vec = color;
+    #node_in vec3 color_in
+    #node_out vec3 surface
+    #node_out vec3 d_color
+    #node_out float d_roughness
+    #node_out vec3 s_color
+    #node_out float s_roughness
+    #node_out float metalness
+    #node_out vec3 normal
+    #node_out vec3 e_color
+    #node_out float emission
+    #node_out vec3 a_color
+    #node_out float alpha
+
+    a_color = color_in;
+    metalness = _0_0;
+    emission = _0_0;
+    alpha = _0_0;
+    normal = nin_normal;
+
+    // NOTE: using unused variable to pass shader verification
+    // + explicit zeroing to prevent glitches in some browsers
+    surface;
+    d_color = vec3(_0_0);
+    d_roughness = _0_0;
+    s_color = vec3(_0_0);
+    s_roughness = _0_0;
+    e_color = vec3(_0_0);
 #endnode
 
 #node BSDF_TRANSLUCENT
@@ -784,17 +856,21 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_out vec3 normal
     #node_out vec3 e_color
     #node_out float emission
+    #node_out vec3 a_color
+    #node_out float alpha
 
     e_color = strength_in * color_in;
     metalness = _0_0;
     emission = _1_0;
+    alpha = _1_0;
     normal = nin_normal;
     // NOTE: using unused variable to pass shader verification
+    // + explicit zeroing to prevent glitches in some browsers
     surface;
-    d_color;
-    d_roughness;
-    s_color;
-    s_roughness;
+    d_color = vec3(_0_0);
+    d_roughness = _0_0;
+    s_color = vec3(_0_0);
+    s_roughness = _0_0;
 #endnode
 
 #node AMBIENT_OCCLUSION
@@ -845,7 +921,7 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     float strength = strength_in;
 
 # node_if INVERT
-    dist = -1.0;
+    dist = -_1_0;
 # node_endif
 
 # node_if USE_NORMAL_IN
@@ -868,10 +944,38 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 
 	vec3 surfgrad = dFdx(height) * Rx + dFdy(height) * Ry;
 
-	strength = max(strength, 0.0);
+	strength = max(strength, _0_0);
 
 	normal_out = normalize(absdet * normal - dist * sign(det) * surfgrad);
-	normal_out = normalize(strength * normal_out + (1.0 - strength) * normal);
+	normal_out = normalize(strength * normal_out + (_1_0 - strength) * normal);
+# node_else
+    normal_out = normal;
+# node_endif
+
+#endnode
+
+#node DISPLACEMENT_BUMP
+    #node_in float height
+    #node_out vec3 normal_out
+
+    float dist = 0.1;
+    vec3 normal = nin_normal;
+
+# node_if USE_DERIVATIVES_EXT
+    vec3 dPdx = dFdx(nin_pos_world);
+    vec3 dPdy = dFdy(nin_pos_world);
+
+    /* Get surface tangents from normal. */
+    vec3 Rx = cross(dPdy, normal);
+    vec3 Ry = cross(normal, dPdx);
+
+    /* Compute surface gradient and determinant. */
+    float det = dot(dPdx, Rx);
+    float absdet = abs(det);
+
+    vec3 surfgrad = dFdx(height) * Rx + dFdy(height) * Ry;
+
+    normal_out = normalize(absdet * normal - dist * sign(det) * surfgrad);
 # node_else
     normal_out = normal;
 # node_endif
@@ -880,29 +984,36 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 
 #node NORMAL_MAP
     #node_var SPACE NM_TANGENT
+    #node_var USE_NORMAL_IN 0
     #node_in float strength
     #node_in vec4 color
+    #node_in vec3 normal_in
     #node_out vec3 normal_out
 
-    vec3 bl_normal = nin_normal;
+# node_if USE_NORMAL_IN
+    vec3 bl_normal = normal_in;
+# node_else
+    vec3 bl_normal = nin_nmap_normal;
+# node_endif
 
 # node_if SPACE == NM_TANGENT
     normal_out = 2.0 * color.xyz - _1_0;
-    normal_out = nin_tbn_matrix * normal_out;
+    normal_out = nin_nmap_tbn_matrix * normal_out;
 
 # node_elif SPACE == NM_OBJECT || SPACE == NM_BLENDER_OBJECT
     normal_out = 2.0 * color.xyz - _1_0;
     // mimic blender behavior
-    normal_out.yz *= -1.0;
+    normal_out.yz *= -_1_0;
     normal_out = tsr9_transform_dir(u_model_tsr, normal_out);
 
 # node_elif SPACE == NM_WORLD || SPACE == NM_BLENDER_WORLD
     normal_out = 2.0 * color.xyz - _1_0;
     // mimic blender behavior
-    normal_out.yz *= -1.0;
+    normal_out.yz *= -_1_0;
 # node_endif
 
-    normal_out = normalize(mix(bl_normal, normal_out, strength));
+    float fac = max(strength, _0_0);
+    normal_out = normalize(mix(bl_normal, normal_out, fac));
 #endnode
 
 #node VECT_TRANSFORM
@@ -1173,6 +1284,8 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_in vec3  normal1
     #node_in vec3  e_color1
     #node_in float emission1
+    #node_in vec3  a_color1
+    #node_in float  alpha1
     #node_in vec3  d_color2
     #node_in float d_roughness2
     #node_in vec3  s_color2
@@ -1181,6 +1294,8 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_in vec3  normal2
     #node_in vec3  e_color2
     #node_in float emission2
+    #node_in vec3  a_color2
+    #node_in float  alpha2
     #node_out vec3  shader_out
     #node_out vec3  d_color_out
     #node_out float d_roughness_out
@@ -1190,6 +1305,8 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_out vec3  normal_out
     #node_out vec3  e_color_out
     #node_out float emission_out
+    #node_out vec3  a_color_out
+    #node_out float alpha_out
 
     float clamped_factor = clamp(factor, _0_0, _1_0);
 
@@ -1225,6 +1342,8 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     metalness_out = mix(metalness1, metalness2, clamped_factor);
     normal_out = mix(normal1, normal2, clamped_factor);
     emission_out = mix(emission1, emission2, clamped_factor);
+    a_color_out = mix(a_color1, a_color2, clamped_factor);
+    alpha_out = mix(alpha1, alpha2, clamped_factor);
 #endnode
 
 #node UV_MERGED
@@ -1255,12 +1374,20 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 
 #node TEX_COORD_GE
     #node_out vec3 generated
+#node_if !IS_WORLD
     generated = v_orco_tex_coord;
+#node_else
+    generated = nin_ray;
+#node_endif
 #endnode
 
 #node TEX_COORD_OB
     #node_out vec3 vec_out
+#node_if !IS_WORLD
     vec_out = tsr9_transform(u_model_tsr_inverse, nin_pos_world);
+#node_else
+    vec_out = nin_ray;
+#node_endif
 #endnode
 
 #node TEX_COORD_CA
@@ -1429,22 +1556,22 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_var READ_R 0
     #node_var READ_G 0
     #node_var READ_B 0
-    #node_var NODE_TEX_ROW 0.0
+    #node_var NODE_TEX_ROW _0_0
     #node_in float factor
     #node_in vec3 vec_in
     #node_out vec3 vec
 
     vec = vec_in;
 #node_if READ_R
-    vec.r = (GLSL_TEXTURE(u_nodes_texture, vec2(0.5 * vec_in.r + 0.5, NODE_TEX_ROW)).r - 0.5) * 2.0;
+    vec.r = (GLSL_TEXTURE(u_nodes_texture, vec2(_0_5 * vec_in.r + _0_5, NODE_TEX_ROW)).r - _0_5) * 2.0;
 #node_endif
 
 #node_if READ_G
-    vec.g = (GLSL_TEXTURE(u_nodes_texture, vec2(0.5 * vec_in.g + 0.5, NODE_TEX_ROW)).g - 0.5) * 2.0;
+    vec.g = (GLSL_TEXTURE(u_nodes_texture, vec2(_0_5 * vec_in.g + _0_5, NODE_TEX_ROW)).g - _0_5) * 2.0;
 #node_endif
 
 #node_if READ_B
-    vec.b = (GLSL_TEXTURE(u_nodes_texture, vec2(0.5 * vec_in.b + 0.5, NODE_TEX_ROW)).b - 0.5) * 2.0;
+    vec.b = (GLSL_TEXTURE(u_nodes_texture, vec2(_0_5 * vec_in.b + _0_5, NODE_TEX_ROW)).b - _0_5) * 2.0;
 #node_endif
     vec = mix(vec_in, vec, factor);
 #endnode
@@ -1454,7 +1581,7 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     #node_var READ_R 0
     #node_var READ_G 0
     #node_var READ_B 0
-    #node_var NODE_TEX_ROW 0.0
+    #node_var NODE_TEX_ROW _0_0
     #node_in float factor
     #node_in vec3 vec_in
     #node_out vec3 vec
@@ -1492,7 +1619,7 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 
 // ColorRamp node
 #node VALTORGB
-    #node_var NODE_TEX_ROW 0.0
+    #node_var NODE_TEX_ROW _0_0
     #node_in float factor
     #node_out vec3 color
     #node_out float alpha
@@ -1504,19 +1631,19 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 
 #node MAPPING
     #node_var MAPPING_SCALE_DEF 0
-    #node_var MAPPING_SCALE vec3(1.0)
+    #node_var MAPPING_SCALE vec3(_1_0)
 
     #node_var MAPPING_TRANS_DEF 0
-    #node_var MAPPING_TRANS vec3(0.0)
+    #node_var MAPPING_TRANS vec3(_0_0)
 
     #node_var MAPPING_TRS_MATRIX_DEF 0
-    #node_var MAPPING_TRS_MATRIX mat4(1.0)
+    #node_var MAPPING_TRS_MATRIX mat4(_1_0)
     
     #node_var MAPPING_MIN_CLIP_DEF 0
-    #node_var MAPPING_MIN_CLIP vec3(0.0)
+    #node_var MAPPING_MIN_CLIP vec3(_0_0)
 
     #node_var MAPPING_MAX_CLIP_DEF 0
-    #node_var MAPPING_MAX_CLIP vec3(1.0)
+    #node_var MAPPING_MAX_CLIP vec3(_1_0)
 
     #node_var MAPPING_IS_NORMAL 0
 
@@ -2118,6 +2245,32 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 # node_endif
 #endnode
 
+#node MIX_WORLD_RGB
+    #node_in float factor
+    #node_in vec3 color1
+    #node_in vec3 color2
+    #node_out vec3 color
+
+    float clamped_factor = clamp(factor, _0_0, _1_0);
+    color = mix(color1, color2, clamped_factor);
+// # node_if MIX_RGB_USE_CLAMP
+//     color = clamp(color, _0_0, _1_0);
+// # node_endif
+#endnode
+
+#node ADD_WORLD_RGB
+    #node_in float factor
+    #node_in vec3 color1
+    #node_in vec3 color2
+    #node_out vec3 color
+
+    float clamped_factor = clamp(factor, _0_0, _1_0);
+    color = mix(color1, color1 + color2, clamped_factor);
+// # node_if MIX_RGB_USE_CLAMP
+//     color = clamp(color, _0_0, _1_0);
+// # node_endif
+#endnode
+
 #node OUTPUT
     #node_in vec3 color_in
     #node_in float alpha_in
@@ -2126,12 +2279,18 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     nout_alpha = alpha_in;
 #endnode
 
-#node OUTPUT_MATERIAL
-    #node_in vec3 surface_in
-    #node_in vec3 volume_in
-    #node_in float displacement_in
+#node OUTPUT_SURFACE
+    #node_in vec3 color_in
 
-    nout_color = surface_in;
+    nout_color = color_in;
+    nout_alpha = _1_0;
+#endnode
+
+#node OUTPUT_WORLD_SURFACE
+    #node_in vec3 color_in
+
+    nout_color = color_in;
+    nout_alpha = _1_0;
 #endnode
 
 #node MATERIAL_BEGIN
@@ -2661,17 +2820,17 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
     float spec_power = sp_params[1];
     sfactor = _0_0;
     if (lfac.g == _1_0) {
-        if (refrac < 1.0 || spec_power == _0_0)
+        if (refrac < _1_0 || spec_power == _0_0)
             sfactor = _0_0;
         else {
             if (spec_power < 100.0)
-                spec_power = sqrt(1.0 / spec_power);
+                spec_power = sqrt(_1_0 / spec_power);
             else
                 spec_power = 10.0 / spec_power;
 
             vec3 halfway = normalize(nin_eye_dir + ldir);
 # node_if MAT_USE_TBN_SHADING
-            float nh = 0.0;
+            float nh = _0_0;
             if (norm_fac == _0_0) {
                 float dot_ht = dot(v_shade_tang.xyz, halfway);
                 nh = sqrt(_1_0 - dot_ht * dot_ht);
@@ -2746,16 +2905,14 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
         color_out += spot_intensity * mix(vec4(D, _1_0), vec4(_1_0),
                 spot_diff_factor) * translucency_color
                 * vec4(lcolorint * ln * vec3(transmit_coeff), _1_0);
-        specular_out = specular_in;
     } else {
         // frontside lighting
-        specular_out = specular_in + lcolorint * S * sfactor;
         color_out = color_in + vec4(lcolorint * D * lfactor, sfactor);
     }
 #node_else
-    specular_out = specular_in + lcolorint * S * sfactor;
     color_out = color_in + vec4(lcolorint * D * lfactor, sfactor);
 #node_endif
+    specular_out = specular_in + lcolorint * S * sfactor;
 #endnode
 
 #node RGB
@@ -2869,7 +3026,7 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 #node_endif
 #endnode
 
-#node TEXTURE_ENVIRONMENT
+#node TEXTURE_ENVIRONMENT_CUBE
     #node_in vec3 coords
     #node_out optional vec3 color
     #node_out optional float value
@@ -2886,6 +3043,58 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 # node_if USE_OUT_value
     value = texval.w;
 # node_endif
+#endnode
+
+#node TEXTURE_ENVIRONMENT_EQUIRECTANGULAR
+    #node_var USE_VECTOR_IN 0
+    #node_in vec3 vector
+    #node_out vec3 color
+    #node_param uniform sampler2D texture
+
+# node_if USE_VECTOR_IN
+    vec3 nray = normalize(vector);
+# node_elif IS_WORLD
+    vec3 nray = nin_ray;
+# node_else
+    vec3 nray = nin_normal;
+# node_endif
+
+    float u = -atan(nray.y, nray.x) / (2.0 * M_PI) + _0_5;
+    float v = atan(nray.z, sqrt(nray.x * nray.x + nray.y * nray.y)) / M_PI + _0_5;
+
+    vec4 texval = GLSL_TEXTURE(texture, vec2(u, v));
+
+    color = texval.xyz;
+    srgb_to_lin(color);
+#endnode
+
+#node TEXTURE_ENVIRONMENT_MIRROR_BALL
+    #node_var USE_VECTOR_IN 0
+    #node_in vec3 vector
+    #node_out vec3 color
+    #node_param uniform sampler2D texture
+
+# node_if USE_VECTOR_IN
+    vec3 nray = normalize(vector);
+# node_elif IS_WORLD
+    vec3 nray = nin_ray;
+# node_else
+    vec3 nray = nin_normal;
+# node_endif
+
+    nray.y -= _1_0;
+
+    float div = 2.0 * sqrt(max(-_0_5 * nray.y, _0_0));
+    if (div > _0_0)
+        nray /= div;
+
+    float u = _0_5 * (nray.x + _1_0);
+    float v = _0_5 * (nray.z + _1_0);
+
+    vec4 texval = GLSL_TEXTURE(texture, vec2(u, v));
+
+    color = texval.xyz;
+    srgb_to_lin(color);
 #endnode
 
 #node TEXTURE_COLOR
@@ -3146,6 +3355,14 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 	fac = fresnel_dielectric(I_view, n, eta);
 #endnode
 
+#node BACKGROUND
+    #node_in vec3 color_in
+    #node_in float strength_in
+    #node_out vec3 color_out
+
+    color_out = color_in * strength_in;
+#endnode
+
 #node B4W_REFLECT
     #node_in vec3 vec_in1
     #node_in vec3 vec_in2
@@ -3193,7 +3410,7 @@ float fresnel_dielectric(vec3 inc, vec3 norm, float eta)
 
         float h = GLSL_TEXTURE(texture, texcoord).a; // get height
 
-        for (float i = 1.0; i <= steps; i++)
+        for (float i = _1_0; i <= steps; i++)
         {
             if (h < height) {
                 height   -= pstep;
@@ -3302,47 +3519,79 @@ void nodes_main(in vec3 nin_eye_dir,
     nout_shadow_factor = vec4(_0_0);
     nout_alpha = _0_0;
 
-#if USE_NODE_MATERIAL_BEGIN  || USE_NODE_GEOMETRY_NO \
+/*==============================================================================
+                        CYCLES WORLD NODE MATERIAL
+==============================================================================*/
+#if IS_WORLD
+# if USE_NODE_TEXTURE_ENVIRONMENT_EQUIRECTANGULAR || USE_NODE_TEXTURE_ENVIRONMENT_MIRROR_BALL \
+        || USE_NODE_TEX_COORD_GE || USE_NODE_TEX_COORD_OB
+    vec3 nin_ray = -nin_eye_dir;
+# endif
+# if USE_NODE_GEOMETRY_GL
+    vec3 nin_pos_world = -nin_eye_dir;
+# endif
+# if USE_NODE_TEX_COORD_NO
+    vec3 nin_normal = nin_eye_dir;
+# endif
+# if USE_NODE_GEOMETRY_NO
+    vec3 nin_geom_normal = nin_eye_dir;
+# endif
+#else
+/*==============================================================================
+                          OBJECT NODE MATERIAL
+==============================================================================*/
+# if (USE_NODE_MATERIAL_BEGIN  || USE_NODE_GEOMETRY_NO \
         || CAUSTICS || CALC_TBN_SPACE || USE_NODE_TEX_COORD_NO || USE_NODE_NORMAL_MAP \
         || USE_NODE_BSDF_BEGIN || USE_NODE_FRESNEL || USE_NODE_TEX_COORD_RE \
-        || USE_NODE_LAYER_WEIGHT || USE_NODE_BUMP
+        || USE_NODE_LAYER_WEIGHT || USE_NODE_BUMP)
 
-    vec3 normal = normalize(v_normal);
-    vec3 sided_normal = normal;
-# if DOUBLE_SIDED_LIGHTING || USE_NODE_GEOMETRY_NO
+    vec3 unnorm_sided_normal = v_normal;
+
+#  if DOUBLE_SIDED_LIGHTING || USE_NODE_GEOMETRY_NO
     // NOTE: workaround for some bug with gl_FrontFacing on Intel graphics
     // or open-source drivers
-#if REFLECTION_PASS == REFL_PASS_PLANE
+#   if REFLECTION_PASS == REFL_PASS_PLANE
     if (gl_FrontFacing == false)
-#else
+#   else
     if (gl_FrontFacing)
-#endif
-        sided_normal = sided_normal;
+#   endif
+        unnorm_sided_normal = unnorm_sided_normal;
     else
-        sided_normal = -sided_normal;
+        unnorm_sided_normal = -unnorm_sided_normal;
+#  endif
+
+    // NOTE: be very careful with normalization of interpolated normal
+#  if USE_NODE_NORMAL_MAP
+    vec3 nin_nmap_normal = unnorm_sided_normal;
+#  endif
+
+#  if DOUBLE_SIDED_LIGHTING || USE_NODE_GEOMETRY_NO || USE_NODE_TEXTURE_NORMAL \
+        || USE_NODE_B4W_PARALLAX
+    vec3 norm_sided_normal = normalize(unnorm_sided_normal);
+#  endif
+
+#  if DOUBLE_SIDED_LIGHTING
+    vec3 nin_normal = norm_sided_normal;
+#  else
+    vec3 nin_normal = normalize(v_normal);
+#  endif
+
+#  if USE_NODE_GEOMETRY_NO
+    vec3 nin_geom_normal = norm_sided_normal;
+#  endif
 # endif
 
-# if DOUBLE_SIDED_LIGHTING
-    vec3 nin_normal = sided_normal;
-# else
-    vec3 nin_normal = normal;
+# if CALC_TBN_SPACE
+#  if USE_NODE_TEXTURE_NORMAL || USE_NODE_B4W_PARALLAX
+    vec3 binormal = cross(norm_sided_normal, v_tangent.xyz) * v_tangent.w;
+    mat3 nin_tbn_matrix = mat3(v_tangent.xyz, binormal, norm_sided_normal);
+#  endif
+
+#  if USE_NODE_NORMAL_MAP
+    vec3 nmap_binormal = cross(unnorm_sided_normal, v_tangent.xyz) * v_tangent.w;
+    mat3 nin_nmap_tbn_matrix = mat3(v_tangent.xyz, nmap_binormal, unnorm_sided_normal);
+#  endif
 # endif
-
-# if USE_NODE_GEOMETRY_NO
-    vec3 nin_geom_normal = sided_normal;
-# endif
-#endif
-
-#if CALC_TBN_SPACE
-    // vec3 binormal = cross(sided_normal, v_tangent.xyz) * v_tangent.w;
-    // mat3 tbn_matrix = mat3(v_tangent.xyz, binormal, sided_normal);
-    // mat3 nin_tbn_matrix = tbn_matrix;
-
-    vec3 binormal = cross(sided_normal, v_tangent.xyz) * v_tangent.w;
-    binormal = normalize(binormal);
-    vec3 tangent = cross(binormal, sided_normal) * v_tangent.w;
-    mat3 nin_tbn_matrix = mat3(tangent, binormal, sided_normal);
-#endif
 
     // NOTE: array uniforms used in nodes can't be renamed:
     // u_light_positions, u_light_directions, u_light_color_intensities,
@@ -3351,6 +3600,7 @@ void nodes_main(in vec3 nin_eye_dir,
     vec4 nin_pos_view = v_pos_view;
     float nin_emit = u_emit;
     float nin_ambient = u_ambient;
+#endif
 
     #nodes_main
 }

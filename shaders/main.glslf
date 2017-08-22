@@ -23,6 +23,8 @@
 #var USE_TBN_SHADING 0
 #var CAMERA_TYPE CAM_TYPE_PERSP
 #var USE_POSITION_CLIP 0
+#var RGBA_SHADOWS 0
+#var USE_BSDF_SKY_DIM 0
 
 #var NODES 0
 #var ALPHA 0
@@ -50,9 +52,17 @@
 #var POISSON_DISK_NUM NO_SOFT_SHADOWS
 
 #var USE_DERIVATIVES_EXT 0
+#var USE_TEXTURE_LOD_EXT 0
 
-# if USE_DERIVATIVES_EXT
+#var USE_LOD_SMOOTHING 0
+#var FF_COMPOSITING_HACK 0
+
+# if GLSL1 && USE_DERIVATIVES_EXT
 #extension GL_OES_standard_derivatives: enable
+# endif
+
+# if GLSL1 && USE_TEXTURE_LOD_EXT
+#extension GL_EXT_shader_texture_lod: enable
 # endif
 
 /*==============================================================================
@@ -64,10 +74,18 @@
 #include <color_util.glslf>
 #include <math.glslv>
 
+#if USE_LOD_SMOOTHING
+#include <coverage.glslf>
+#endif
+
 #if !SHADELESS
 # if CAUSTICS
 #include <caustics.glslf>
 # endif
+#endif
+
+#if RGBA_SHADOWS
+#include <pack.glslf>
 #endif
 
 
@@ -83,6 +101,10 @@ uniform samplerCube u_sky_texture;
 #elif USE_ENVIRONMENT_LIGHT && SKY_COLOR
 uniform vec3 u_horizon_color;
 uniform vec3 u_zenith_color;
+#endif
+
+#if GLSL1 && USE_BSDF_SKY_DIM
+    uniform float u_bsdf_cube_sky_dim;
 #endif
 
 uniform float u_environment_energy;
@@ -136,6 +158,11 @@ uniform mat4 u_cube_fog;
 # if USE_FOG
 uniform vec4 u_fog_params; // intensity, depth, start, height
 # endif
+#endif
+
+#if USE_LOD_SMOOTHING
+uniform float u_lod_coverage;
+uniform float u_lod_cmp_logic;
 #endif
 
 /*==============================================================================
@@ -194,7 +221,7 @@ uniform float u_mirror_factor;
 uniform vec4 u_refl_plane;
 #endif
 
-#if USE_NODE_LAMP
+#if USE_NODE_LAMP && NUM_LAMP_LIGHTS != 0
 uniform vec3 u_lamp_light_positions[NUM_LAMP_LIGHTS];
 uniform vec3 u_lamp_light_directions[NUM_LAMP_LIGHTS];
 uniform vec3 u_lamp_light_color_intensities[NUM_LAMP_LIGHTS];
@@ -329,6 +356,11 @@ void main(void) {
     alpha = 1.0;
 #endif  // ALPHA
 
+#if USE_LOD_SMOOTHING
+    if (!coverage_is_frag_visible(u_lod_coverage, u_lod_cmp_logic))
+        discard;
+#endif
+
 #if !DISABLE_FOG
 # if WATER_EFFECTS
     fog(color, view_dist, eye_dir, dist_to_water);
@@ -346,6 +378,10 @@ void main(void) {
     lin_to_srgb(color);
 #if ALPHA && !ALPHA_CLIP
     premultiply_alpha(color, alpha);
+#endif
+
+#if ALPHA && !ALPHA_CLIP && FF_COMPOSITING_HACK
+    color = clamp(color, 0.0, alpha);
 #endif
 
     GLSL_OUT_FRAG_COLOR = vec4(color, alpha);

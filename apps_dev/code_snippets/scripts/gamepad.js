@@ -36,7 +36,7 @@ var COLLISION_RAD = 6 * 6;
 
 exports.init = function() {
     m_app.init({
-        canvas_container_id: "canvas_cont",
+        canvas_container_id: "main_canvas_container",
         callback: init_cb,
         physics_enabled: false,
         alpha: true,
@@ -217,7 +217,7 @@ function get_last_gmpd_id() {
 function set_camera_pos() {
     var camobj = m_scenes.get_active_camera();
     var troll_rig = m_scenes.get_object_by_name("troll_rig");
-    m_cnst.append_track(camobj, troll_rig);
+    m_cnst.append_track(camobj, troll_rig, "-Z", "Y");
 }
 
 function chech_dist_from_middle(point) {
@@ -227,10 +227,10 @@ function chech_dist_from_middle(point) {
 function create_interface() {
     var gmpd_settings = document.createElement("a");
     gmpd_settings.innerHTML = "Settings";
-    gmpd_settings.className = "text";
+    gmpd_settings.className = "btn";
     gmpd_settings.style.position = "absolute";
-    gmpd_settings.style.bottom = "50px";
-    gmpd_settings.style.right = "50px";
+    gmpd_settings.style.bottom = "12px";
+    gmpd_settings.style.right = "20px";
     var main_cont = m_cont.get_container();
     main_cont.appendChild(gmpd_settings);
     var is_hiden = true;

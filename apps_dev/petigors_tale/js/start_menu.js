@@ -15,11 +15,9 @@ var m_scs    = require("scenes");
 var m_cfg    = require("config");
 var m_print  = require("print");
 var m_sfx    = require("sfx");
-var m_time   = require("time");
 var m_assets = require("assets");
 var m_mat    = require("material");
 var m_cont   = require("container");
-var m_util   = require("util");
 var m_nla    = require("nla");
 var m_trans  = require("transform");
 var m_version = require("version");
@@ -27,7 +25,6 @@ var m_phy   = require("physics");
 var m_math  = require("math");
 
 var m_vec3  = require("vec3");
-var m_quat  = require("quat");
 
 var m_conf = require("game_config");
 
@@ -109,8 +106,8 @@ function intro_load_cb(data_id) {
     _mouse_x = _canvas_elem.width / 2;
     _mouse_y = _canvas_elem.height / 2;
 
-    m_assets.enqueue([["config", m_assets.AT_JSON, "js/intro_config.json"]],
-            process_config, null);
+    m_assets.enqueue([{id:"config", type:m_assets.AT_JSON, url:"js/intro_config.json"}],
+            process_config);
 
     var camobj = m_scs.get_active_camera();
     m_cam.get_camera_angles(camobj, _default_cam_rot);
@@ -177,7 +174,7 @@ function setup_language(config) {
     }
 }
 
-function process_config(data, uri, type, path) {
+function process_config(data, id, type, url) {
     setup_buttons(data);
     setup_music(data);
     setup_language(data);
@@ -336,7 +333,6 @@ function rotate_cam_cb(obj, id, pulse) {
 
     m_cam.get_camera_angles(camobj, _vec2_tmp);
 
-    var c_width = _canvas_elem.width;
     var dx = (default_x - _mouse_x) / _canvas_elem.width * _cam_rot_fac;
     var dy = (default_y - _mouse_y) / _canvas_elem.height * _cam_rot_fac;
     var x = _default_cam_rot[0] - dx;
@@ -355,9 +351,8 @@ function main_canvas_mouse_move(e) {
     if (e.preventDefault)
         e.preventDefault();
 
-    var x = e.clientX;
-    var y = e.clientY;
-
+    var x = e.offsetX;
+    var y = e.offsetY;
     _mouse_x = x;
     _mouse_y = y;
 
@@ -377,14 +372,15 @@ function main_canvas_touch(e) {
     var touch = touches[0];
     var x = touch.clientX;
     var y = touch.clientY;
-    process_screen_click(x, y);
+    var canvas_xy = m_cont.client_to_canvas_coords(x, y, _vec2_tmp);
+    process_screen_click(canvas_xy[0], canvas_xy[1]);
 }
 
 function main_canvas_click(e) {
     if (e.preventDefault)
         e.preventDefault();
-    var x = e.clientX;
-    var y = e.clientY;
+    var x = e.offsetX;
+    var y = e.offsetY;
     process_screen_click(x, y);
 }
 
@@ -449,7 +445,7 @@ function load_HQ_elements() {
 function play_ending_speaker(speaker) {
     for (var i = 0; i < _playlist_spks.length; i++) {
         var spk = _playlist_spks[i];
-        if (m_sfx.is_play(spk))
+        if (m_sfx.is_playing(spk))
             m_sfx.duck(spk, 0, 1);
     }
     m_sfx.duck(_intro_spk, 0, 1);

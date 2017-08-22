@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ b4w.module["__primitives"] = function(exports, require) {
 
 var m_cfg   = require("__config");
 var m_geom  = require("__geometry");
-var m_print = require("__print");
+var m_tbn   = require("__tbn");
 var m_util  = require("__util");
 
 var cfg_def  = m_cfg.defaults;
@@ -62,7 +62,7 @@ function generate_grid(x_subdiv, y_subdiv, x_size, y_size) {
     var indices   = [];
     var positions = [];
     var texcoords = [];
-    var tbn_quats = [];
+    var tbn_count = x_subdiv * y_subdiv;
 
     var delta_x = (2 * x_size) / (x_subdiv - 1);
     var delta_y = (2 * y_size) / (y_subdiv - 1);
@@ -76,7 +76,7 @@ function generate_grid(x_subdiv, y_subdiv, x_size, y_size) {
             var y = -y_size + j * delta_y;
 
             positions.push(x, y, 0);
-            tbn_quats.push(0, 0, 0, 1);
+
             texcoords.push(i / (x_subdiv - 1), j / (y_subdiv -1));
 
             if (i && j) {
@@ -95,7 +95,7 @@ function generate_grid(x_subdiv, y_subdiv, x_size, y_size) {
     var va_frame = m_util.create_empty_va_frame();
 
     va_frame["a_position"] = new Float32Array(positions);
-    va_frame["a_tbn_quat"] = new Float32Array(tbn_quats);
+    va_frame["a_tbn"] = m_tbn.create(tbn_count);
 
     var submesh = m_geom.init_submesh("GRID_PLANE");
 
@@ -121,7 +121,7 @@ exports.generate_cascaded_grid = function(num_cascads, subdivs, detailed_dist) {
 
     var indices      = [];
     var positions    = [];
-    var tbn_quats    = [];
+    var tbn_count    = 0;
 
     var prev_x = 0;
     var prev_y = 0;
@@ -191,7 +191,7 @@ exports.generate_cascaded_grid = function(num_cascads, subdivs, detailed_dist) {
                             } else
                                 var cascad_step = delta_x;
                             positions.push(x, y, cascad_step);
-                            tbn_quats.push(0.707,0,0,0.707);
+                            tbn_count++;
                             last_added_ind++; 
                         }
                         indices_in_row.push(idx0);
@@ -328,15 +328,18 @@ exports.generate_cascaded_grid = function(num_cascads, subdivs, detailed_dist) {
                      idx0 + 1, idx0 + 3, idx0 + 7,
                      idx0 + 7, idx0 + 4, idx0 + 5,
                      idx0 + 6, idx0 + 4, idx0 + 7);
-        for (var i = 0; i < 8; i++)
-            tbn_quats.push(0.707,0,0,0.707);
+
+        tbn_count += 8;
     }
 
     // construct submesh
     var va_frame = m_util.create_empty_va_frame();
 
     va_frame["a_position"] = new Float32Array(positions);
-    va_frame["a_tbn_quat"] = new Float32Array(tbn_quats);
+    va_frame["a_tbn"] = m_tbn.create(tbn_count);
+
+    // CHECK: why should we do next line?
+    m_tbn.multiply_quat(va_frame["a_tbn"], [0.707, 0, 0, 0.707], va_frame["a_tbn"]);
 
     var submesh = m_geom.init_submesh("MULTIGRID_PLANE");
 
@@ -428,6 +431,8 @@ function generate_from_quads(verts) {
     var va_frame = m_util.create_empty_va_frame();
 
     va_frame["a_position"] = new Float32Array(positions);
+    // CHECK: probably there should be non-init tbn
+    va_frame["a_tbn"] = m_tbn.create(len / 4);
 
     var submesh = m_geom.init_submesh("FROM_QUADS");
 
@@ -446,7 +451,7 @@ function generate_from_quads(verts) {
  */
 exports.generate_frustum = function(corners) {
 
-    var corners = m_util.vectorize(corners, []); 
+    corners = m_util.vectorize(corners, []); 
 
     // TODO: implement simple method to generate frustum geometry
     var quads = [];
@@ -514,20 +519,6 @@ exports.generate_billboard = function() {
     return submesh;
 }
 
-exports.generate_cube = function() {
-
-    var submesh = m_geom.init_submesh("CUBEMAP_BOARD");
-
-    var va_frame = m_util.create_empty_va_frame();
-    va_frame["a_position"] = new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]); 
-
-    submesh.va_frames[0] = va_frame;
-    submesh.indices = new Uint32Array([0, 2, 1, 0, 3, 2]);
-    submesh.base_length = 4;
-
-    return submesh;
-}
-
 /**
  * Return uv sphere submesh
  *
@@ -537,21 +528,21 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
         use_smooth, use_wireframe) {
     var submesh = m_geom.init_submesh("UV_SPHERE");
 
-	var x, y;
+    var x, y;
     
     var positions = [];
     var grid_positions = [];
     var indices = [];
 
-	for (y = 0; y <= rings; y++) {
-		for (x = 0; x <= segments; x++) {
+    for (y = 0; y <= rings; y++) {
+        for (x = 0; x <= segments; x++) {
 
-			var u = x / segments;
-			var v = y / rings;
+            var u = x / segments;
+            var v = y / rings;
 
-			var xpos = -size * Math.cos(u * 2*Math.PI) * Math.sin(v * Math.PI);
-			var ypos = size * Math.cos(v * Math.PI);
-			var zpos = size * Math.sin(u * 2*Math.PI) * Math.sin(v * Math.PI);
+            var xpos = -size * Math.cos(u * 2*Math.PI) * Math.sin(v * Math.PI);
+            var ypos = size * Math.cos(v * Math.PI);
+            var zpos = size * Math.sin(u * 2*Math.PI) * Math.sin(v * Math.PI);
 
             // clamp near-zero values to improve TBN smoothing quality
             if (use_smooth) {
@@ -561,22 +552,22 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
                 zpos = (Math.abs(zpos) < edge) ? 0 : zpos;
             }
 
-			grid_positions.push(xpos + center[0], ypos + center[1], 
+            grid_positions.push(xpos + center[0], ypos + center[1], 
                     zpos + center[2]);
-		}
-	}
+        }
+    }
 
     var v_index = 0;
-	for (y = 0; y < rings; y++) {
-		for (x = 0; x < segments; x++) {
+    for (y = 0; y < rings; y++) {
+        for (x = 0; x < segments; x++) {
 
-			var v1 = extract_vec3(grid_positions, (segments+1)*y + x + 1);
-			var v2 = extract_vec3(grid_positions, (segments+1)*y + x);
-			var v3 = extract_vec3(grid_positions, (segments+1)*(y + 1) + x);
-			var v4 = extract_vec3(grid_positions, (segments+1)*(y + 1) + x + 1);
+            var v1 = extract_vec3(grid_positions, (segments+1)*y + x + 1);
+            var v2 = extract_vec3(grid_positions, (segments+1)*y + x);
+            var v3 = extract_vec3(grid_positions, (segments+1)*(y + 1) + x);
+            var v4 = extract_vec3(grid_positions, (segments+1)*(y + 1) + x + 1);
             
             // upper pole
-			if (Math.abs(v1[1]) == (size + center[1])) {
+            if (Math.abs(v1[1]) == (size + center[1])) {
 
                 add_vec3_to_array(v1, positions);
                 add_vec3_to_array(v3, positions);
@@ -590,7 +581,7 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
                 v_index += 3;
 
             // lower pole
-			} else if (Math.abs(v3[1]) == (size + center[1])) {
+            } else if (Math.abs(v3[1]) == (size + center[1])) {
                 add_vec3_to_array(v1, positions);
                 add_vec3_to_array(v2, positions);
                 add_vec3_to_array(v3, positions);
@@ -602,7 +593,7 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
                     indices.push(v_index, v_index+1, v_index+2);
                 v_index += 3;
 
-			} else {
+            } else {
                 add_vec3_to_array(v1, positions);
                 add_vec3_to_array(v2, positions);
                 add_vec3_to_array(v3, positions);
@@ -619,9 +610,9 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
                 }
 
                 v_index += 4;
-			}
-		}
-	}
+            }
+        }
+    }
 
     // construct submesh
 
@@ -630,7 +621,7 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
     va_frame["a_position"] = positions;
 
     if (use_wireframe) {
-        va_frame["a_tbn_quat"] = [];
+        va_frame["a_tbn"] = m_tbn.create();
     } else {
 
         var shared_indices = m_geom.calc_shared_indices(indices, 
@@ -638,7 +629,7 @@ exports.generate_uv_sphere = function(segments, rings, size, center,
 
         var normals = m_geom.calc_normals(indices, positions, 
                 shared_indices);
-        va_frame["a_tbn_quat"] = m_util.gen_tbn_quats(normals);
+        va_frame["a_tbn"] = m_tbn.from_norm_tan(normals);
     }
 
     submesh.va_frames[0] = va_frame;

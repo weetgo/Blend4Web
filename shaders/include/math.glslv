@@ -293,4 +293,15 @@ mat3 tsr_set_quat(in vec4 quat, in mat3 tsr) {
     return dest;
 }
 
+vec4 get_tbn_quat(in vec4 tbn) {
+    return normalize(tbn);
+}
+
+vec4 get_tbn_quat(in vec4 tbn, out float correct_angle, out float handedness) {
+    vec4 quat = get_tbn_quat(tbn);
+    correct_angle = length(tbn) * M_PI;
+    handedness = sign(tbn[3]);
+    return get_tbn_quat(tbn);
+}
+
 #endif

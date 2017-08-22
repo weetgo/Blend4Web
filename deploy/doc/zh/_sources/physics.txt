@@ -34,6 +34,8 @@
 
     * 基本角色
 
+    * 使用API​​控制角色
+
   * 导航网格
 
     * 创建导航网格
@@ -353,6 +355,113 @@ Blend4Web引擎有快速建立用户控制的第一人称角色的选项。这�
 
 注解: 只有一个基本角色可存在于场景中。如果场景中有多个角色，该引擎将
   使用他 们的第一个基本角色，而忽略其他。
+
+
+使用API​​控制角色
+-----------------
+
+上述基本角色只能提供通用功能。如果您需要更多的角色行为控制，您应该使用
+fps  模块的以下方法。
+
+其中最重要的是 enable_fps_controls() 方法，就像它名称一样，方法用于初
+始化场景中的角色。它可以如下使用：
+
+   var m_fps = require("fps");
+
+   m_fps.enable_fps_controls();
+
+应该在应用程序开始时使用此方法（在  **load_cb** 函数中）来启用角色控制
+。
+
+注解: 此方法可能与前述的启用基本角色  enable_camera_controls()  方法
+  冲突。 这两种方法不能同时使用。
+
+该方法还具有以下可选参数：
+
+   "character" 设置角色物体。可以通过调用  get_first_character()  方法
+   检索到角色的链接。如果场景中存在多个角色，则应该使用它。
+
+   "element"  指定HTML元素添加侦听器的方法。
+
+   "motion_cb" 指定当角色改变方向时调用的回调函数。
+
+   "gamepad_id" 指定插入系统的游戏手柄的ID。
+
+   "forward_sens", "backward_sens", "right_sens", "left_sens",
+   "jump_sens", "fly_sens" - 这些参数用来设置一列传感器的类型来指定角
+   色行为如在不同的方向走，跳跃等等。
+
+   "rotation_cb" 指定当一个角色或者相机旋转时调用的回调函数。
+
+   "lock_camera" - 将此参数设置为 "true"  将会将场景摄像头父物体设置为
+   角色。
+
+其他重要的方法是 set_cam_sensitivity() 和 set_cam_smooth_factor().  第
+一个设置相机的灵敏度（由数字值在零到100之间定义）。第二种方法定义了相
+机移动的平滑度（由0到1.0之间的值定义）。
+
+
+角色状态
+~~~~~~~~
+
+角色状态是表示角色当前行为的常数值（它当前是否走动或执行任何其他操作）
+。场景中的每个角色总是也仅能拥有一个状态。
+
+可用角色状态：
+
+   CS_CLIMB - 一个角色正在爬。
+
+   CS_FLY - 一个角色正在飞行。
+
+   CS_RUN - 一个角色正在跑。
+
+   CS_STAY - 一个角色不动。
+
+   CS_WALK - 一个角色在走路。
+
+可以使用  get_character_state() 方法检索特定角色的当前状态，而特定状态
+可以通过  switch_state() 方法分配给角色。以下示例显示了如何使用这两种
+方法：
+
+   var m_fps = require("fps");
+
+   var current_state = m_fps.get_character_state();
+
+   if (current_state == m_fps.CS_FLY)
+       m_fps.switch_state(m_fps.CS_WALK);
+
+
+动作绑定
+~~~~~~~~
+
+fps 模块还提供了将各种动作绑定到角色事件的手段。以下是  bind_action()
+方法的使用：
+
+   var m_fps = require("fps");
+   var m_ctl = require("controls");
+
+   var action_cb = function(value) {
+       console.log("Q key pressed.");
+   }
+
+   m_fps.bind_action(m_fps.AT_PRESSED, [m_ctl.KEY_Q], action_cb);
+
+该方法具有以下参数：
+
+   * 第一个参数是动作的类型：
+
+     AT_CONTINUOUS - 一种输入类型，用于检测连续的用户操作，例如鼠标移
+     动，键盘按键，手柄按钮倾斜等。
+
+     AT_PRESSED -  此输入类型检测离散的用户操作，例如按下按钮。
+
+     AT_RELEASED -  检测按钮（鼠标，游戏手柄或键盘）被释放的输入类型。
+
+   * 第二个参数定义了一组传感器类型（如键盘键，游戏键按钮或鼠标动作
+     ） 。
+
+   * **action_cb** 是一个回调函数，将在每次用户执行第一个参数定义的
+     动 作时被调用。
 
 
 导航网格

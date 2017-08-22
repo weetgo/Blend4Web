@@ -66,6 +66,8 @@ Camera limits can be viewed right in the Blender viewport, if the ``Display Limi
 
 |
 
+.. _camera_target_type:
+
 **Target Type Camera**
 ----------------------
 
@@ -128,6 +130,8 @@ Camera limits can be viewed right in the Blender viewport, if the ``Display Limi
 
 |
 
+.. _camera_eye_type:
+
 **Eye Type Camera**
 -------------------
 
@@ -166,6 +170,8 @@ Camera limits can be viewed right in the Blender viewport, if the ``Display Limi
         :width: 100%
 
 |
+
+.. _camera_hover_type:
 
 **Hover Type Camera**
 ---------------------
@@ -238,6 +244,8 @@ Setting incorrect distance or elevation angle limits will disable this parameter
         :width: 100%
 
 |
+
+.. _camera_static_type:
 
 **Static Camera**
 
@@ -399,7 +407,7 @@ To change the control mode and to completely define a camera's behavior, the fol
     m_cam.target_setup(camera, { pos: POS, pivot: LOOK_AT, 
             dist_lim: TARGET_DIST_LIMITS, use_panning: true });
 
-    // setup HOVER camera on a fixed distance (without zooming) reltively to its pivot
+    // setup HOVER camera on a fixed distance (without zooming) relatively to its pivot
     m_cam.hover_setup(camera, { pos: POS, pivot: LOOK_AT });
 
     // setup HOVER camera with zooming (distance + angle limits)

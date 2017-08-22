@@ -209,10 +209,10 @@ function setup_movement(up_arrow, down_arrow, on_ground_sens) {
         }
 
         if (move_dir && island) {
-            if (!m_sfx.is_play(_char_run_spk))
+            if (!m_sfx.is_playing(_char_run_spk))
                 m_sfx.play_def(_char_run_spk);
         } else {
-            if (m_sfx.is_play(_char_run_spk))
+            if (m_sfx.is_playing(_char_run_spk))
                 m_sfx.stop(_char_run_spk);
         }
 
@@ -287,7 +287,7 @@ function setup_jumping(touch_jump, on_ground_sens) {
             m_phy.character_jump(obj);
             var island = m_ctl.get_sensor_value(obj, id, 2);
             if (island) {
-                var id = Math.floor(2 * Math.random());
+                id = Math.floor(2 * Math.random());
                 m_sfx.play_def(_char_jump_spks[id]);
 
                 m_anim.apply(_char_wrapper.rig, "character_jump");
@@ -329,7 +329,7 @@ function setup_attack(touch_attack, elapsed) {
     }
 
     function process_attack_speakers() {
-        if (m_sfx.is_play(_char_run_spk))
+        if (m_sfx.is_playing(_char_run_spk))
             m_sfx.stop(_char_run_spk);
 
         m_sfx.play_def(_char_attack_spk);
@@ -503,7 +503,6 @@ function kill() {
 }
 
 exports.add_gem = function(gem_wrapper) {
-    var gem_empty = gem_wrapper.empty;
     if (_char_wrapper.gem_slot) {
         if (_char_wrapper.gem_slot == gem_wrapper)
             return;

@@ -7,16 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Blend4Web 16.08\n"
 "Report-Msgid-Bugs-To: https://www.blend4web.com/en/forums/forum/17/\n"
-"POT-Creation-Date: 2016-10-21 15:38+0300\n"
-"PO-Revision-Date: 2016-10-29 13:37+0800\n"
-"Last-Translator: Blend4Web Team <info [at] blend4web.com>\n"
+"POT-Creation-Date: 2017-04-20 16:04+0300\n"
+"PO-Revision-Date: 2017-04-27 16:13+0800\n"
+"Last-Translator: kidux <yuzukyo@gmail.com>\n"
 "Language-Team: Chinese <info [at] blend4web.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.3.4\n"
-"Language: zh_CN\n"
-"X-Generator: Poedit 1.8.9\n"
+"Language: zh\n"
+"X-Generator: Poedit 1.8.12\n"
 
 #: ../about.rst:5
 msgid "Overview"
@@ -44,8 +44,8 @@ msgid ""
 "name). The content is rendered by means of WebGL and other browser technologies, without the use of "
 "plugins."
 msgstr ""
-"三维建模和动画工具（因此得名） - Blend4Web框架与Blender紧密集成。内容是由WebGL的和其他的浏览器技术渲染而"
-"成，**不使用插件** 。"
+"Blend4Web框架与Blender紧密集成 - 一个3D建模和动画工具（因此命名）。内容通过WebGL和其他浏览器技术渲染，而"
+"不使用任何插件。"
 
 #: ../about.rst:20
 msgid ""
@@ -57,8 +57,7 @@ msgstr "技术上Blend4Web是网页库，Blender插件以及进行调试和优�
 msgid ""
 "The Blend4Web 3D engine has been developed by Triumph LLC employees since 2010. The engine was first "
 "released on March 28 2014."
-msgstr ""
-"自2010年以来凯旋有限责任公司（ Triumph LLC）的员工开发了Blend4Web 3D引擎。该引擎首次发布于2014年3月28日。"
+msgstr "Blend4Web 3D引擎自2010年起由Triumph LLC员工开发。该引擎于2014年3月28日首次发布。"
 
 #: ../about.rst:30
 msgid "\"About Engines\""
@@ -268,7 +267,7 @@ msgid "UV mapping - the model is unwrapped for further overlaying of textures (f
 msgstr "UV贴图 - 模型被解开铺平后进行的纹理制作（平面图像）"
 
 #: ../about.rst:136
-msgid "texturing - textures are overlayed on the 3D model"
+msgid "texturing - textures are overlaid on the 3D model"
 msgstr "纹理 - 覆盖在3D模型上的肌理"
 
 #: ../about.rst:137

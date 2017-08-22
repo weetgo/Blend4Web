@@ -64,9 +64,6 @@ Generic Settings
 
 *Mapping > Coordinates*
     Texture coordinates type. Supported types are ``UV`` (use UV map), ``Normal`` (use direction at the camera; available only for diffuse maps; used for the creation of **material capture**, **matcap**) and ``Generated``. The default value is ``Generated``.
- 
-    .. note::
-        Blend4Web engine currently supports no more than two UV maps per material. If the material has more than two UV maps, additional maps will be ignored during the export.
 
 *Mapping > Size*
     Scaling the UV map along respective axes. The default values are 1.0.
@@ -318,7 +315,7 @@ Specifics of Mobile Devices
 
 The peculiarities for mobile devices are as follows:
 
-#. Normal operation of video textures on iPhones is not possible because these devices play back videos via the standard iOS video player. For these devices you need to convert your videos to special ``.seq`` format by using our :ref:`converter <converter>`.
+#. Normal operation of video textures on iPhone is not possible because these devices play back videos via the standard iOS video player. For these devices you need to convert your videos to special ``.seq`` format by using our :ref:`converter <converter>`.
 #. some devices only support playing back only one video file.
 #. stable operation is not guaranteed if the ``Offset`` value is not zero.
 #. not all devices support changing the video playback rate.
@@ -503,8 +500,8 @@ The engine also supports the cyclic rendering of scenes to each other.
 
 .. _render_to_texture_canvas:
 
-Canvas
-------
+Canvas textures
+---------------
 
 A <canvas> HTML element can be used as a texture. It can be modified via API.
 

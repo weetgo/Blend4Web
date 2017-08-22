@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014-2016 Triumph LLC
+ * Copyright (C) 2014-2017 Triumph LLC
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,6 +72,7 @@ var SHADERS = ["anchors.glslf",
     "tex_skybox.glslf",
     "debug_view.glslf",
     "debug_view.glslv",
+    "node_skybox.glslf",
 
     "postprocessing/antialiasing.glslf",
     "postprocessing/bloom_combine.glslf",
@@ -80,14 +81,12 @@ var SHADERS = ["anchors.glslf",
     "postprocessing/depth_pack.glslf",
     "postprocessing/dof.glslf",
     "postprocessing/glow.glslf",
-    "postprocessing/bloom_blur.glslf",
     "postprocessing/god_rays.glslf",
     "postprocessing/god_rays.glslv",
     "postprocessing/god_rays_combine.glslf",
     "postprocessing/luminance.glslf",
     "postprocessing/luminance_av.glslf",
-    "postprocessing/luminance_trunced.glslf",
-    "postprocessing/luminance_trunced.glslv",
+    "postprocessing/luminance_truncated.glslf",
     "postprocessing/motion_blur.glslf",
     "postprocessing/outline.glslf",
     "postprocessing/performance.glslf",
@@ -103,6 +102,7 @@ var SHADERS = ["anchors.glslf",
     "include/blending.glslf",
     "include/caustics.glslf",
     "include/color_util.glslf",
+    "include/coverage.glslf",
     "include/depth_fetch.glslf",
     "include/dynamic_grass.glslv",
     "include/environment.glslf",
@@ -152,6 +152,7 @@ var SAMPLER_EXPR = /(?:^|[^a-zA-Z_])uniform.*?(sampler2D|samplerCube)(?=\s)(.*?\
 var UNIFORM_EXPR = /(?:^|[^a-zA-Z_])(uniform)(?=\s)\s*(float|vec2|vec3|vec4|ivec2|ivec3|ivec4|bvec2|bvec3|bvec4|mat2|mat3|mat4|sampler2D|samplerCube)\s*(.*?\[\s*([0-9]*)\s*\])?/;
 var IN_EXPR = /(?:^|[^a-zA-Z_])(in)(?=\s)\s*(float|vec2|vec3|vec4|mat2|mat3|mat4)\s*(.*?\[\s*([0-9]*)\s*\])?/;
 var VARYING_EXPR = /(?:^|[^a-zA-Z_])(varying)(?=\s)\s*(float|vec2|vec3|vec4|mat2|mat3|mat4)\s*(.*?\[\s*([0-9]*)\s*\])?/;
+var DISCARD_EXPR = /(?:\W|^)discard(\W|$)/;
 
 // 15 === 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3
 var FILLED_ROW_FLAGS = 15;
@@ -178,12 +179,44 @@ exports.setup_context = function(gl) {
     _gl = gl;
 }
 
+exports.init_shaders_info = init_shaders_info;
+function init_shaders_info() {
+    var shaders_info = {
+        vert: "",
+        frag: "",
+        directives: [],
+        node_elements: [],
+        status: VALID,
+        attribute_count: 0,
+        texture_count: 0
+    }
+
+    return shaders_info;
+}
+
+exports.clone_shaders_info = clone_shaders_info;
+function clone_shaders_info(shaders_info) {
+    var shaders_info_new = init_shaders_info();
+
+    shaders_info_new.vert = shaders_info.vert;
+    shaders_info_new.frag = shaders_info.frag;
+
+    shaders_info_new.directives = m_util.clone_object_r(shaders_info.directives);
+    shaders_info_new.node_elements = m_util.clone_object_r(shaders_info.node_elements);
+
+    shaders_info_new.status = shaders_info.status;
+    shaders_info_new.attribute_count = shaders_info.attribute_count;
+    shaders_info_new.texture_count = shaders_info.texture_count;
+
+    return shaders_info_new;
+}
+
 exports.set_directive = set_directive;
 /**
  * Override existing directive for Shaders Info object.
  * @methodOf shaders
  * @param shaders_info Shaders Info Object
- * @param {String} name Directive name
+ * @param {string} name Directive name
  * @param value Directive value, specify string to set from another directive
  */
 function set_directive(shaders_info, name, value) {
@@ -215,7 +248,7 @@ exports.get_directive = get_directive;
  * Get [directive_name, directive_value] pair.
  * @methodOf shaders
  * @param shaders_info Shaders Info Object
- * @param {String} name Directive name
+ * @param {string} name Directive name
  */
 function get_directive(shaders_info, name) {
     var dirs = shaders_info.directives;
@@ -255,7 +288,7 @@ function get_shader_default_vars(vert_name, frag_name) {
  */
 exports.set_default_directives = function(sinfo) {
 
-    sinfo.directives = m_util.clone_object_json(get_shader_default_vars(sinfo.vert, sinfo.frag));
+    sinfo.directives = m_util.clone_object_r(get_shader_default_vars(sinfo.vert, sinfo.frag));
     set_directive(sinfo, "PRECISION", m_cfg.defaults.precision);
 
     if (m_cfg.defaults.precision == "highp")
@@ -289,7 +322,6 @@ exports.get_fname = function(sinfo) {
 exports.get_compiled_shader = get_compiled_shader;
 /**
  * Compile, return and cache GL shader object from shader_id
- * @param shader_id JSONified shaders_info object
  * @methodOf shaders
  */
 function get_compiled_shader(shaders_info) {
@@ -398,7 +430,7 @@ function get_interface_variables_count(shader_text, expr) {
     var shader_list = shader_text.split(";");
     var uniforms_list = shader_list.map(function(statement) {
         var r = statement.match(expr);
-        return r && (r[3]? parseInt(r[3]): 1);
+        return r && (r[3]? parseInt(r[3], 10): 1);
     }).filter(function(decl) {
         return decl;
     });
@@ -445,7 +477,7 @@ function check_varyings_in_packing_limits(shader_text) {
         var r = statement.match(expr);
         return r && {
             type: r[2],
-            array_size: (r[4]? parseInt(r[4]): 1)
+            array_size: (r[4]? parseInt(r[4], 10): 1)
         };
     }).filter(function(decl) {
         return decl;
@@ -456,15 +488,16 @@ function check_varyings_in_packing_limits(shader_text) {
 
 function check_uniforms_in_packing_limits(shader_text, buffer, max_uniforms) {
     var shader_list = shader_text.split(";");
-    var variables = shader_list.map(function(statement) {
-        var r = statement.match(UNIFORM_EXPR);
-        return r && {
-            type: r[2],
-            array_size: (r[4]? parseInt(r[4]): 1)
-        };
-    }).filter(function(decl) {
-        return decl;
-    });
+    var variables = [];
+
+    for (var i = 0; i < shader_list.length; i++) {
+        var r = shader_list[i].match(UNIFORM_EXPR);
+        if (r)
+            variables.push({
+                type: r[2],
+                array_size: (r[4]? parseInt(r[4], 10): 1)
+            });
+    }
 
     return check_packing_limits(variables, buffer, max_uniforms);
 }
@@ -725,7 +758,7 @@ function get_shader_ast(dir, filename) {
         var main_text = _shader_texts[filename];
         if (!main_text)
             return null;
-        var ast = require("__gpp_parser").parser.parse(main_text);
+        var ast = get_gpp_parser().parse(main_text);
     }
 
     _shader_ast_cache[cache_id] = ast;
@@ -733,10 +766,17 @@ function get_shader_ast(dir, filename) {
     return ast;
 }
 
-function set_shader_texts(shader_name, shadet_text) {
+/**
+ * @suppress {missingProperties}
+ */
+function get_gpp_parser() {
+    return require("__gpp_parser").parser;
+}
+
+function set_shader_texts(shader_name, shader_text) {
     if (!_shader_texts)
         _shader_texts = {};
-    _shader_texts[shader_name] = shadet_text;
+    _shader_texts[shader_name] = shader_text;
 }
 
 exports.load_shaders = function() {
@@ -754,7 +794,7 @@ exports.load_shaders = function() {
             shader_assets.push({id:SHADERS[i], type:asset_type, url:shader_path});
         }
 
-        var asset_cb = function(shader_text, shader_name, type, path) {
+        var asset_cb = function(shader_text, shader_name, type, url) {
             set_shader_texts(shader_name, shader_text);
         }
 
@@ -800,6 +840,8 @@ function combine_dir_tokens(type, shaders_info) {
         dirs["GLSL_TEXTURE"] = ["texture"];
         dirs["GLSL_TEXTURE_CUBE"] = ["texture"];
         dirs["GLSL_TEXTURE_PROJ"] = ["textureProj"];
+        dirs["GLSL_TEXTURE_LOD"] = ["textureLod"];
+        dirs["GLSL_TEXTURE_CUBE_LOD"] = ["textureLod"];
     } else {
         dirs["GLSL1"] = ["1"];
         dirs["GLSL3"] = ["0"];
@@ -814,9 +856,17 @@ function combine_dir_tokens(type, shaders_info) {
         dirs["GLSL_TEXTURE"] = ["texture2D"];
         dirs["GLSL_TEXTURE_CUBE"] = ["textureCube"];
         dirs["GLSL_TEXTURE_PROJ"] = ["texture2DProj"];
+        dirs["GLSL_TEXTURE_LOD"] = ["textureLod"];
+        if (cfg_def.texture_lod_available) {
+            dirs["GLSL_TEXTURE_LOD"] = ["texture2DLodEXT"];
+            dirs["GLSL_TEXTURE_CUBE_LOD"] = ["textureCubeLodEXT"];
+        } else {
+            dirs["GLSL_TEXTURE_LOD"] = ["texture2D"];
+            dirs["GLSL_TEXTURE_CUBE_LOD"] = ["textureCube"];
+        }
     }
 
-    if (cfg_def.compared_mode_depth)
+    if (cfg_def.compared_mode_depth && !cfg_def.rgba_fallback_shadows)
         dirs["GLSL_SMPLR2D_SHDW"] = ["sampler2DShadow"];
     else
         dirs["GLSL_SMPLR2D_SHDW"] = ["sampler2D"];
@@ -1543,8 +1593,6 @@ function preprocess_shader(type, ast, shaders_info) {
     }
 
     function expand_macro_iter(tokens, dirs, fdirs, empty_as_zero, result, node_dirs) {
-        var filename = curr_file_stack[curr_file_stack.length - 1];
-
         for (var i = 0; i < tokens.length; i++) {
             var token = tokens[i];
 
@@ -1598,9 +1646,12 @@ function init_shader(gl, vshader_text, fshader_text,
         transient_sc_uniform_setters : m_util.create_non_smi_array(),
 
         // NOTE: for debug purposes
-        shaders_info: m_util.clone_object_json(shaders_info),
+        shaders_info: clone_shaders_info(shaders_info),
 
         shader_id: shader_id,
+
+        has_discard: check_frag_discard(fshader_text),
+
         cleanup_gl_data_on_unload: true
     };
 
@@ -1622,6 +1673,10 @@ function init_shader(gl, vshader_text, fshader_text,
     }
 
     return compiled_shader;
+}
+
+function check_frag_discard(fshader_text) {
+    return Boolean(fshader_text.match(DISCARD_EXPR));
 }
 
 exports.debug_get_compilation_stats = function() {

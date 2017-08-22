@@ -1426,6 +1426,11 @@ void du_apply_torque(du_body_id body, float tx, float ty, float tz)
     btRigidBody *bt_body = reinterpret_cast <btRigidBody*>(body);
     bt_body->applyTorque(btVector3(tx, ty, tz));
 }
+void du_set_angular_velocity(du_body_id body, float avx, float avy, float avz)
+{
+    btRigidBody *bt_body = reinterpret_cast <btRigidBody*>(body);
+    bt_body->setAngularVelocity(btVector3(avx, avy, avz));
+}
 
 void du_update_vehicle_controls(du_vehicle_id vehicle, float engine_force, 
         float brake_force, float steering_value)
@@ -1449,6 +1454,8 @@ void du_update_boat_controls(du_boat_id boat, float engine_force,
 {
     duBoat *du_boat = reinterpret_cast <duBoat*>(boat);
 
+    // NOTE: in Z-up configuration it goes in reverse direction
+    engine_force *= -1;
     du_boat->applyEngineForce(engine_force);
 
     du_boat->setBrake(brake_force, 0);
@@ -1541,7 +1548,8 @@ float du_get_vehicle_speed(du_vehicle_id vehicle)
 float du_get_boat_speed(du_boat_id boat)
 {
     duBoat *du_boat = reinterpret_cast <duBoat*>(boat);
-    return du_boat->getCurrentSpeedKmHour();
+    // NOTE: in Z-up configuration it goes in reverse direction
+    return -du_boat->getCurrentSpeedKmHour();
 }
 
 float du_get_body_speed(du_body_id body)

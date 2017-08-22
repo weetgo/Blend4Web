@@ -125,6 +125,8 @@ The engine supports 3 methods of the environment lighting simulation.
 2. Hemispherical lighting model in which horizon and zenith colors should be specified. As a result objects are filled with a gradient between these two colors depending on the direction of normals.
 3. Lighting using an :ref:`environment map <environment_map>` - so called image-based lighting.
 
+Please note that environment lighting uses a simplified model which doesn't take into account mutual shadowing of objects.
+
 Activation
 ----------
 
@@ -146,6 +148,15 @@ Setup
 
 *World > Horizon Color* and *World > Zenith Color*
     If the hemispherical model (``Sky Color``) is selected the horizon and zenith colors can be specified by means of the ``World > Horizon Color`` and ``World > Zenith Color`` color pickers. It is recommended to activate the ``World > Blend Sky`` option for better color selection.
+
+*World > Use Nodes (Cycles)*
+    If this option is enabled, ``Cycles`` nodes can be used to set up the environment. Disabled by default.
+
+*World > Reflect World*
+    If this parameter is enabled, environment will also be rendered for reflections (i.e., it will be reflected by mirror surfaces). Disabled by default.
+
+*World > Render Only Reflection*
+    If this parameter is enabled, environment will be rendered for reflections, but not for the scene itself. Disabled by default.
 
 
 Environment map method

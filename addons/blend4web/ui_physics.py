@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2016 Triumph LLC
+# Copyright (C) 2014-2017 Triumph LLC
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ for m in b4w_modules:
     exec(blend4web.load_module_script.format(m))
 
 from blend4web.translator import _, p_
-SUPPORTED_FIELD_TYPES = {'WIND'}
+SUPPORTED_FIELD_TYPES = {'NONE', 'WIND'}
 
 # common properties for all B4W object panels
 class PhysicsButtonsPanel:
